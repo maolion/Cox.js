@@ -80,7 +80,7 @@
             _Util                 = null,
             _is                   = null,
             _Limit                = null,
-            _Optional             = null,
+            _Nullable             = null,
             _Params               = null,
             _ParamTypeTable       = null,
             _Implements           = null,
@@ -1966,14 +1966,15 @@
             
             var 
                 XFunction_unit    = new _UTest( "XFunction" ),
-                ParamTypeModifier = null
+                ParamTypeModifier = null,
+                xPrototype        = null
             ;
 
 
             //参数类型修饰符通用接口
             ParamTypeModifier = {
                 toString : function toString(){
-                    return this.__COX_MODIFIER_SIGN__;
+                    return this.__COX_SIGN__;
                 },
                 equals   : function equals( obj ){
                     return obj === this;
@@ -1984,71 +1985,51 @@
             //参数参数类型修饰符
 
             /**
-             * Optional 用于标记函数参数列表中某一参数为可选参数
-             * @param { Type } type 参数类型
-             * @param { Object } value 默认值
+             * Nullable 允许传入参数为空值
+             * @param { Type } type 类型
              */
-            _Optional = _KeyWord(
-                "Optional", _KeyWord.PARAM_TYPE_MODIFIER,
-                ObjectFactory( function Optional( type, value ){
+            _Nullable = _KeyWord(
+                "Nullable", _KeyWord.PARAM_TYPE_MODIFIER,
+                ObjectFactory( function Nullable( type ){
                     if( !_is( _Type, type ) ){
                         throw new TypeError( 
-                            "Optional操作符需要一个Function类型实例." 
+                            "Nullable操作符需要一个Function类型实例." 
                         );
                     }
-                    if( arguments.length === 1 ){
-                        switch( type ){
-                            case Number:
-                                value = 0;
-                                break;
-                            case String:
-                                value = "";
-                                break;
-                            case Boolean:
-                                value = false;
-                                break;
-                            case Object:
-                                value = {};
-                                break;
-                            case Array:
-                                value = [];
-                                break;
-                            default:
-                                value = null;
-                        }
-                    }else{
-                        if( !_is( type, value ) && !_is( _Null, value ) ){
-                            throw new TypeError(
-                                "Optional操作符中 value参数（如果给定)的值类型必须与type参数的类型匹配."
-                            );
-                        }
-                    }
-                    this.type  = type;
-                    this.value = value;
-
-                    this.__COX_MODIFIER_SIGN__ = "Optional " + (
-                        ( type.name || type.__COX_SIGN__ || type.toString() )
-                    );
+                    this.type = type;
+                    this.__COX_SIGN__ = "Nullable( " + 
+                        ( type.__COX_SIGN__ || type.name || type.toString() ) + 
+                    " )";
                 }, ParamTypeModifier )
             );
-            
+
+            _Nullable.prototype.__instancelike__ = function( param ){
+                return param === null 
+                    || param === undefined 
+                    || _is( this.type, param );
+            };
+
+
             XFunction_unit.append(
-                new _UTest( "Optional", function( assert ){
-                    assert( _is( _KeyWord, _Optional, _Optional.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
-                    assert(  _Optional( String ), "检测是否能正确执行-1" );
-                    assert(  _Optional( String ) instanceof _Optional, "检测是否能正确执行-2" );
-                    assert(  _is( _Optional, _Optional( String ) ), "检测是否能正确执行-3" );
-                    assert(  _Optional( String ).type === String, "检测是否能正确执行-4" );
-                    assert(  _Optional( String ).value === "", "检测是否能正确执行-5" );
-                    assert(  _Optional( Object ).value , "检测是否能正确执行-6" );
-                    assert(  typeof _Optional( Number ).value  === "number", "检测是否能正确执行-7" );
-                    assert(  _Optional( Object, null ).value === null, "检测是否能正确执行-8" );
+                new _UTest( "Nullable", function( assert ){
+                    assert( _is( _KeyWord, _Nullable, _KeyWord.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
+                    assert( _Nullable( String ), "检测是否能正确执行-1" );
+                    assert( _Nullable( String ) instanceof _Nullable, "检测是否能正确执行-2" );
+                    assert( _is( _Nullable, _Nullable( String ) ) , "检测是否能正确执行-3" );
+                    assert( _is( _Nullable( String ), null )  === true, "检测是否能正确执行-4" );
+                    assert( _is( _Nullable( String ), undefined ) === true, "检测是否能正确执行-5" );
+                    assert( _is( _Nullable( String ), 0 ) === false, "检测是否能正确执行-6" );
+                    assert( _is( _Nullable( String ), false ) === false, "检测是否能正确执行-7" );
+                    assert( _is( _Nullable( String ), "" ) === true, "检测是否能正确执行-8" );
+                    assert( _is( _Nullable( String ), "Hello" ) === true, "检测是否能正确执行-9" );
+                    assert( _is( _Nullable( String ), {} ) === false, "检测是否能正确执行-10" );
+                    console.log( _Nullable( String ).toString() );
                 } )
             );
-            
+
             /**
              * Params 可变参数集
-             * @param { Type } type 类弄
+             * @param { Type } type 类型
              */
             _Params = _KeyWord(
                 "Params", _KeyWord.PARAM_TYPE_MODIFIER,
@@ -2059,208 +2040,470 @@
                         );
                     }
                     this.type  = type;
+                    this.__COX_SIGN__ = "Params( " + 
+                        ( type.__COX_SIGN__ || type.name || type.toString() ) + 
+                    " )";
                 }, ParamTypeModifier )
             );
 
+            _Params.prototype.__instancelike__ = function ( params ){
+                
+                if( !params || !( params instanceof Array ) ){
+                    return false;
+                }
+
+                for( var i = 0, l = ~~params.length; i < l ; i++ ){
+                    if( !_is( this.type, params[i] ) ){
+                        return false;
+                    }
+                }
+                return true;
+            };
+
             XFunction_unit.append(
                 new _UTest( "Params", function( assert ){
-                    assert( _is( _KeyWord, _Params, _Optional.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
+                    assert( _is( _KeyWord, _Params, _KeyWord.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
                     assert( _Params( String ), "检测是否能正确执行-1" );
                     assert( _Params( String ) instanceof _Params, "检测是否能正确执行-2" );
                     assert( _is( _Params, _Params( String ) ) , "检测是否能正确执行-3" );
+                    assert( _is( _Params( String ), [] )  === true, "检测是否能正确执行-4" );
+                    assert( _is( _Params( String ), [ "A", "B", "C" ] ) === true, "检测是否能正确执行-5" );
+                    assert( _is( _Params( String ), null ) === false, "检测是否能正确执行-6" );
+                    assert( _is( _Params( String ), "a" ) === false, "检测是否能正确执行-7" );
+                    console.log( _Params( String ).toString() );
                 } )
             );
 
+            /**
+             * ParamTypeTable 参数类型表
+             * @param { Type } types [ Type, Type, ... ]
+             * 参数类型表中的项允许是普通的“数据类型“(通常是Function类型实例)，
+             * 在此之上还可以使用 Nullable 与 Params 参数类似修饰符 标记参数类型
+             * 支持更多高级的特性，Params修饰符只允许使用在类型表中最后一项上
+             * @property { Number } minParamCount 
+             * @property { Number } maxParamCount
+             * @property { Number } length
+             * @private
+             * @property { Array } __types
+             */
             _ParamTypeTable = _KeyWord( 
                 "ParamTypeTable", _KeyWord.SUBSIDIARY, 
                 ObjectFactory( function(){
-                    var 
-                        types        = SLICE.call( arguments ),
-                        types_length = types.length,
-                        opt_indexs   = [],
-                        gen_indexs   = []
-                    ;   
-                    
-                    this.types              = [];
-                    this.typesIndexs        = null;
-                    this.minParamCount      = 0;
-                    this.maxParamCount      = 0;
-                    this.optionalParamCount = 0;
-                    this.generalParamCount  = 0;
-
-                    for( var i = 0; i < types_length; i++ ){
-                        var type = types[ i ];
-
-                        if( !_is( _Type, type ) 
-                         && !( type instanceof _Optional || type instanceof _Params ) 
+                    var count = arguments.length;
+                    for( var i = 0, l = count - 1; i <= l; i++ ){
+                        var arg = arguments[i];
+                        //对于Params 参数类似修饰符只允许出现在参数类型表的最后
+                        if( arg instanceof _Nullable
+                         || ( arg instanceof _Params && i === l ) 
+                         || _is( _Type, arg )
                         ){
-                            throw new TypeError(
-                                "参数列表中存在无效的参数类型定义"
-                            );
-                        }
-                        
-                        //参数类型被确定
-                        this.types.push( type );
-
-                        switch( type.constructor ){
-                            case _Params:
-                                //Params修饰符只被允许出现在参数类型列表中的最后位置
-                                if( types_length - i !== 1 ){
-                                    throw new Error(
-                                        "Params操作符被不正确使用"
-                                    );
-                                }
-                                //可变参数属于一个不受限制个数的同类型元素项的序列
-                                this.maxParamCount =  Infinity;
                             continue;
-                            case _Optional:
-                                opt_indexs.push( [ i - this.optionalParamCount, i ] );
-                                this.optionalParamCount++;
-                            break;
-                            default: 
-                                //统计最小需要的实参数量
-                                this.minParamCount++; 
-                                this.generalParamCount++;
-                                gen_indexs.push( [ i - this.optionalParamCount, i ] );
-                            break;
+                        }else{
+                            throw new TypeError( "无效的参数类型列表定义" );                            
                         }
-
-                        this.maxParamCount++;
                     }
-                    this.typesIndexs = gen_indexs.concat( opt_indexs );
-                    //普通参数类型拥有优先级然后是可先参数最后是可变参数
+                    
+                    if( arguments[ count - 1 ] instanceof _Params ){
+                        this.minParamCount = count - 1;
+                        this.maxParamCount = Infinity;
+                    }else{
+                        this.minParamCount = count;
+                        this.maxParamCount = count;
+                    }
+
+                    this.length  = count;
+                    this.__types = SLICE.call( arguments );
+                    this.__COX_SIGN__ = _XList.map( arguments, function( type ){
+                        return type.name || type.toString();
+                    } ).join(", ");
                 } ) 
             );
             
-            
+            /**
+             * @method parse 对指定参数列表与参数表进行匹配解析
+             * @param { Array } params 参数列表
+             * @return { Array } 返回匹配后或经过修改排列方式的参数列表
+             */
             _ParamTypeTable.prototype.parse = function parse( params ){
                 var 
-                    selected        = { length : 0 },
-                    params          = SLICE.call( params ),
-                    param_count     = params.length,
-                    current_arg     = null,
-                    indexs          = null,
-                    types           = this.types,
-                    types_indexs    = this.typesIndexs.slice(),
-                    min_param_count = this.minParamCount,
-                    max_param_count = this.maxParamCount
+                    params = params.slice(),
+                    count  = params.length,
+                    types  = this.__types.slice(),
+                    type   = null,
+                    fixed  = []
                 ;
 
-                //检测参数数量是否能达到要求
-                if( param_count < min_param_count
-                 || param_count > max_param_count 
-                ){
+                if( count < this.minParamCount || count > this.maxParamCount ){
                     return null;
                 }
 
-                //空参数类型列表
-                if( types.length === 0 ){
-                    return [];
-                }
-                debugger;
-                while( indexs = types_indexs.shift() ){
-                    var 
-                        s_index = indexs[0],
-                        e_index = indexs[1],
-                        type    = types[ indexs[1] ],
-                        otype   = type instanceof _Optional ? type.type : type,
-                        finded  = false
-                    ;
-
-                    for( var i = e_index; i >= s_index; i-- ){
-                        var value = params[ i ];
-
-                        if( !( i in params ) 
-                         || value === selected 
-                         || !_is( otype, value )
-                        ){
-                            continue;
+                while( type = types.shift() ){
+                    if( type instanceof _Params ){
+                        if( !_is( type, params ) ){
+                            return null;
                         }
-
-                        selected[ e_index ] = value;
-                        params[ i ]         = selected;
-                        finded              = true;
-                        selected.length++;
-                        break;
-                    }
-                    if( !finded ){
-                        if( type instanceof _Optional ){
-                            selected[ e_index ] = type.value;
-                            selected.length++;
-                            continue;
+                        fixed.push( params );
+                    }else{
+                        if( !_is( type, params[0] ) ){
+                            return null;
                         }
-                        //未找到与形参匹配的实参
-                        return null;
+                        fixed.push( params.shift() );
                     }
                 }
-                return SLICE.call( selected );
+                return fixed;
             };
 
+            /**
+             * @method equals 检测参数类型表是否与另一个参数类型表相同
+             * @param { ParamTypeTable/Type } types [ParamTypeTable] or [ Type, Type, ... ]
+             * @return { Boolean }
+             */
+            _ParamTypeTable.prototype.equals = function equals( ){
+                var 
+                    types = arguments[0],
+                    count = arguments.length
+                ;
+
+                if( count === 1 && types instanceof _ParamTypeTable ){
+                    if( types === this ){
+                        return true;
+                    }
+
+                    if( types.length !== this.length 
+                     || types.minParamCount !== this.minParamCount
+                     || types.maxParamCount !== this.maxParamCount
+                    ){
+                        return false;
+                    }
+                    types = types.__types;
+                    count = types.length;
+                }else{
+                    types = arguments;
+                    if( count !== this.length ){
+                        return false;
+                    }
+                }
+
+                for( var i = 0; i < count; i++ ){
+                    var type = types[i];
+                    switch( type.constructor ){
+                        case _Nullable:
+                        case _Params:
+                            if( this.__types[i].constructor !== type.constructor 
+                             || this.__types[i].type !== type.type
+                            ){
+                                return false;
+                            }
+                        break;
+                        default:
+                            if( type !== this.__types[i] ){
+                                return false;
+                            }
+                        break;
+                    }
+                }
+
+                return true;
+            };
+
+            _ParamTypeTable.prototype.toString = function toString(){
+                return this.__COX_SIGN__;
+            };
 
             XFunction_unit.append(
                 new _UTest( "ParamTypeTable", function( assert ){
                     var 
-                        a = _ParamTypeTable(
-                            String, 
-                            _Optional( String ), 
-                            _Optional( String ),
-                            Number,
-                            _Optional( Number ),
-                            _Optional( Number ),
-                            _Optional( String ),
-                            String,
-                            _Params( Boolean )
-                        ),
-                        b = _ParamTypeTable(),
-                        c = _ParamTypeTable( String, String, Number ),
-                        e = _ParamTypeTable(
-                            String, 
-                            _Optional( String ), 
-                            _Optional( String ),
-                            Number,
-                            _Optional( Number ),
-                            _Optional( Number ),
-                            String
-                        )
+                        t1 = _ParamTypeTable(),
+                        t2 = _ParamTypeTable( String, Number, Boolean ),
+                        t3 = _ParamTypeTable( _Nullable( String ), Number, _Params( Boolean ) )
                     ;
-                    assert( a instanceof _ParamTypeTable, "检测是否能被正确执行-1" );
-                    assert( a.types.length === 9, "检测是否能被正确执行-2" );
-                    assert( a.generalParamCount === 3, "检测是否能被正确执行-3" );
-                    assert( a.optionalParamCount === 5, "检测是否能被正确执行-4" );
-                    assert( a.minParamCount === 3, "检测是否能被正确执行-5" );
-                    assert( a.maxParamCount === Infinity, "检测是否能被正确执行-6" );
-                    assert( a.typesIndexs[0].join("") === "00", "检测是否能被正确执行-7" );
-                    assert( a.typesIndexs[1].join("") === "13", "检测是否能被正确执行-8" );
-                    assert( a.typesIndexs[2].join("") === "27", "检测是否能被正确执行-9" );
-                    assert( a.typesIndexs[3].join("") === "11", "检测是否能被正确执行-10" );
-                    assert( a.typesIndexs[4].join("") === "12", "检测是否能被正确执行-11" );
-                    assert( a.typesIndexs[5].join("") === "24", "检测是否能被正确执行-12" );
-                    assert( a.typesIndexs[6].join("") === "25", "检测是否能被正确执行-13" );
-                    assert( a.typesIndexs[7].join("") === "26", "检测是否能被正确执行-14" );
-                    assert( a.typesIndexs.length === 8, "检测是否能被正确执行-15" );
-                    assert( b instanceof _ParamTypeTable, "检测是否能被正确执行-16" );
-                    assert( b.types.length === 0, "检测是否能被正确执行-17" );
-                    assert( b.types.length === 0, "检测是否能被正确执行-18" );
-                    assert( b.generalParamCount === 0, "检测是否能被正确执行-19" );
-                    assert( b.optionalParamCount === 0, "检测是否能被正确执行-20" );
-                    assert( b.minParamCount === 0, "检测是否能被正确执行-21" );
-                    assert( b.maxParamCount === 0, "检测是否能被正确执行-22" );
-                    assert( c.maxParamCount === 3, "检测是否能被正确执行-23" );
-                    //assert(  )
-                    console.dir( e );
-                    console.dir( e.parse([ "a", 2, 3, 1, "b" ]) );
+                    assert( _is( _KeyWord, _ParamTypeTable, _KeyWord.SUBSIDIARY ), "检测是否为关键字" );
+                    assert( t1, "检测是否能正确执行-1" );
+                    assert( t1 instanceof _ParamTypeTable, "检测是否能正确执行-2" );
+                    assert( t1.minParamCount === 0, "检测是否能正确执行-3" );
+                    assert( t1.maxParamCount === 0, "检测是否能正确执行-4" );
+                    assert( t1.parse( [] ) instanceof Array, "检测是否能正确执行-5" );
+                    assert( t1.parse( [] ).length === 0, "检测是否能正确执行-6" );
+                    assert( t2, "检测是否能正确执行-7" );
+                    assert( t2.minParamCount === 3, "检测是否能正确执行-8" );
+                    assert( t2.maxParamCount === 3, "检测是否能正确执行-9" );
+                    assert( t2.parse( [] ) === null, "检测是否能正确执行-10" );
+                    assert( t2.parse( [] ) === null, "检测是否能正确执行-11" );
+                    assert( t2.parse( [ "", 0, true ] ), "检测是否能正确执行-12" );
+                    assert( t2.parse( [ "x", 0, true ] ).join( "" ) === "x0true", "检测是否能正确执行-13" );
+                    assert( t2.parse( [ null, 0, true ] ) === null, "检测是否能正确执行-013" );
+                    assert( t3.minParamCount === 2, "检测是否能正确执行-14" );
+                    assert( t3.maxParamCount === Infinity, "检测是否能正确执行-15" );
+                    assert( t3.parse( [ null, 0 ] ).length === 3, "检测是否能正确执行-16" );
+                    assert( t3.parse( [ null, 0, true ] ).length === 3, "检测是否能正确执行-17" );
+                    assert( t3.parse( [ "13", 0, true, false, false, true ] ).length === 3, "检测是否能正确执行-18" );
+                    assert( t3.parse( [ "13", 0, true, false, false, true ] ).join("") === "130true,false,false,true", "检测是否能正确执行-19" );
+                    assert( t3.parse( [ "13", 0, true, false, 0, true ] ) === null, "检测是否能正确执行-20" );
+                    assert( t3.equals( _Nullable( String ), Number, _Params( Boolean ) ) === true, "检测是否能正确执行-21" );
+                    assert( t3.equals( _ParamTypeTable( _Nullable( String ), Number, _Params( Boolean ) ) ) === true, "检测是否能正确执行-22" );
+                    assert( t3.equals( t3 ) === true, "检测是否能正确执行-23" );
+                    assert( t3.equals( t2 ) === false, "检测是否能正确执行-24" );
+                    console.log( t3.toString() );
+                    
+                } )
+            );
+        
+            xPrototype = {
+                /**
+                 * define 定义重载
+                 * @param { Type } types [ Type, Type, ... ]
+                 * @param { Function } handler [ ..., Function ]
+                 */
+                define : function define(){
+                    var 
+                        args    = SLICE.call( arguments ),
+                        types   = _ParamTypeTable.apply( null, args.slice( 0, -1 ) ),
+                        handler = args[ args.length - 1 ],
+                        list    = this.__COX_XFUNCTION_OVERLOAD_LIST__,
+                        count   = list.length,
+                        index   = list.length
+                    ;
+                    if( typeof handler !== "function" ){
+                        throw new TypeError( "需要为重载提供一个能被执行的处理程序" );
+                    }
+                    for( var i = 0; i < count; i++ ){
+                        //会替换掉相同的参数类型表
+                        if( list[i].equals( types ) ){
+                            index = i;
+                            break;
+                        }
+                    }
+                    list[ index ]               = types;
+                    types.__COX_BUILD_HANDLER__ = handler;
+                    this.__COX_SIGN__           = [];
+                    for( 
+                        var i = 0, l = list.length, n = this.__COX_XFUNCTION_NAME__; 
+                        i < l; 
+                        i++ 
+                    ){
+                        this.__COX_SIGN__.push( n + "(" + list[i] + ")" );
+                    }
+                    this.__COX_SIGN__ = this.__COX_SIGN__.join("\n");
+                },
+                /**
+                 * defined 检测重载列表中是否已经有定义过指定的参数类型表（签名）
+                 * @param { Type } types [ Type, Type, Type, ... ]
+                 * @return { Boolean }
+                 */
+                defined : function defined(){
+                    var 
+                        list  = this.__COX_XFUNCTION_OVERLOAD_LIST__,
+                        count = list.length,
+                        types = SLICE.call( arguments )
+                    ;
+                    
+                    for( var i = 0; i < count; i++ ){
+                        if( list[i].equals( types ) ){
+                            return true;
+                        }
+                    }
+
+                    return false;
+                },
+                /**
+                 * clone 得到 高级函数的一份拷贝
+                 * @return { XFunction }
+                 */
+                clone : function clone(){
+                    var func = _XFunction( EMPTY_FUNCTION );
+                    func.__COX_XFUNCTION_OVERLOAD_LIST__ = this.__COX_XFUNCTION_OVERLOAD_LIST__.slice();
+                    func.__COX_XFUNCTION_NAME__          = this.__COX_XFUNCTION_NAME__;
+                    func.__COX_SIGN__                    = this.__COX_SIGN__;
+                    return func;
+                },
+
+                toString : function toString(){
+                    return this.__COX_SIGN__;
+                }
+            };
+
+            /**
+             * XFunction 创建一个高级的函数
+             * 支持定义参数列表类型
+             * 支持函数重载
+             * @param { Type } types [ Type, Type, ... ]
+             * @param { Function } handler [ ..., function(){} ]
+             * @return { Function }
+             */
+            _XFunction  = _KeyWord( 
+                "XFunction", _KeyWord.DATATYPE, function XFunction(){
+                    var 
+                        //入口函数 其作用是接受参数传入，然后在已经定义的重载列
+                        //表中找到能处理这些参数的处理程序
+                        //最后用这传递的参数去调用处理程序去处理
+                        main = function(){
+                            var 
+                                args      = SLICE.call( arguments ),
+                                list      = main.__COX_XFUNCTION_OVERLOAD_LIST__,
+                                handler   = null,
+                                dest_args = null
+                            ;
+                            //从重载列表中找到能处理传递参数的处理程序
+                            for( var i = 0, l = list.length; i < l; i++  ){
+                                var types = list[i];
+                                if( dest_args = types.parse( args ) ){
+                                    handler = types.__COX_BUILD_HANDLER__;
+                                    break;
+                                }
+                            }
+
+                            if( !handler ){
+                                throw new Error( 
+                                    "未定义与当前传送参数相匹配的处理程序" 
+                                );
+                            }
+
+                            return handler.apply( this, dest_args );
+                        }
+                    ;
+                    main.__COX_XFUNCTION_OVERLOAD_LIST__ = [];
+                    main.__COX_XFUNCTION_NAME__          = 
+                    main.__COX_SIGN__                    = arguments[ arguments.length - 1 ].name
+                                                        || "anonymous";
+                    //为创建的函数添加需要被继承的一些方法
+                    _XObject.mix( main, xPrototype, true );
+                    //定义一个重载
+                    main.define.apply( main, arguments );
+
+                    return main;
+                }
+            );
+            
+            /**
+             * XFunction.bind 将一对象和一可选的参数列表与一指定函数捆绑，函数在
+             * 运行时刻(被调用)时 会将其内部 this 指向捆绑对象，并带入默认参数列表
+             * @param { Function } handler
+             * @param { Object } thisp
+             * @param { Optional ... } default_args 可先的默认参数列表
+             * @return { Function } 
+             * @example
+             *  XFunction.bind( function(){  }, {} );
+             *  XFunction.bind( function( A, B ){ }, {}, 1, 2 );
+             */
+            _XFunction.bind = function bind( handler, thisp, default_args ){
+                default_args = SLICE.call( arguments ).slice( 2 );
+                return function(){
+                    return handler.apply( 
+                        thisp, 
+                        default_args.concat.apply( default_args, arguments ) 
+                    );
+                };
+            };
+
+            /**
+             * XFunction.memoize 创建一个支持缓存计算结果的函数,只针对于计算过
+             * 程复杂，计算量大的函数
+             * @param { Function } handler
+             * @return { Function }
+             * @example
+             *  var feibo = XFunction.memoize( function( n ){
+             *      return n > 1 ? feibo( n - 1 ) + feibo( n - 2 ) : n;
+             *  } );
+             *  feibo( 100 );
+             */
+            _XFunction.memoize = function memoize( handler ){
+                var memoize = {};
+                return function(){
+                    var 
+                        args = SLICE.call( arguments ),
+                        //= = 知道嘛我写这东西 IE8- 都不在考虑范围 一直是, 
+                        //不爽 过来B4我呀，你B4我呀
+                        key  = JSON.stringify( args )   
+                    ;
+                    if( memoize.hasOwnProperty( key ) ){
+                        return memoize[ key ];
+                    }else{
+                        return memoize[ key ] = handler.apply( this, arguments );
+                    }
+                };
+
+            };
+
+            XFunction_unit.append(
+                new _UTest( "XFunction", function( assert ){
+                    var 
+                        v  = 0,
+                        f1 = _XFunction( function f1(){ v = 1 } ),
+                        f2 = null
+                    ;
+                    assert( _is( _KeyWord, _XFunction, _KeyWord.DATATYPE ), "检测是否为关键字" );
+                    assert( _XFunction, "检测是否能正确执行-2" );
+                    assert( typeof f1 === "function", "检测是否能正确执行-3" );
+                    assert( (f1(), v) === 1, "检测是否能正确执行-4" );
+                    f1.define( Number, function(n){ v = n; } );
+                    assert( (f1(2), v) === 2, "检测是否能正确执行-5" );
+                    f1.define( Number, Number, function(n1, n2){ v = n1 * n2; } );
+                    assert( (f1(1,1), v) === 1, "检测是否能正确执行-6" );
+                    f1.define( _Params( Number ), function(ns){
+                        v = _XList.reduce( ns, function( a, b ){
+                            return a + b;
+                        } );
+                    } );
+                    assert( (f1(1,1,1,5), v) === 8, "检测是否能正确执行-7" );
+                    assert( (f1(2,2), v) === 4, "检测是否能正确执行-8" );
+                    f2 = f1.clone();
+                    f2.define( Number, Number, function( n1, n2 ){ return v = Math.pow( n1, n2 ) } );
+                    assert( (f1(2,2), v) === 4, "检测是否能正确执行-9" );
+                    assert( (f2(), v) === 1, "检测是否能正确执行-10" );
+                    assert( (f2(2), v) === 2, "检测是否能正确执行-11" );
+                    assert( (f2(2,3), v) === 8, "检测是否能正确执行-12" );
+                    assert( f2(1,0) === 1, "检测是否能正确执行-13" );
+                    console.log( f1 );
+                    console.log( f2 );
+                    //assert( f1, "检测是否能正确执行-3" )
+                } )
+            );
+            
+            
+            XFunction_unit.subUnit( "XFunction" ).append(
+                new _UTest( "bind", function( assert ){
+                    var 
+                        obj = {},
+                        t1  = null,
+                        t2  = null,
+                        f1  = null
+                    ;
+                    f1 = _XFunction.bind( function(){
+                        t1 = this;
+                    }, obj );
+                    f1();
+                    f1 = _XFunction.bind( function( A, B, c ){
+                        t2 = A + B + c;
+                        t1 = this;
+                    }, t1, 1, 2 );
+                    f1( 3 );
+                    assert( t1 === obj && t2 === 6, "检测bind是否能正确执行" );
                 } )
             );
 
-            _XFunction  = _KeyWord( 
-                "XFunction", _KeyWord.DATATYPE, function XFunction( args, handler ){
-                    //在这里。创建出一个高级的函数（支持重载的函数）
-                    
-                }
+            XFunction_unit.subUnit( "XFunction" ).append(
+                new _UTest( "memoize", function( assert ){
+                    var 
+                        t1 = null,
+                        f1 = null
+                    ;
+                    t1 = 0;
+                    f1 = _XFunction.memoize( function( n ){
+                        t1 += n;
+                    } );
+
+                    f1( 1 );
+                    f1( 1 );
+                    f1( 1 );
+                    f1( 2 );
+                    f1( 2 );
+
+                    assert( t1 === 3, "检测memoize是否能被正确执行" );
+                } )
             );
 
             gunit.append( XFunction_unit );
-            
+            //XFunction_unit.subUnit( "XFunction" ).test();
             XFunction_unit.test();
 
         }();
@@ -2275,94 +2518,4 @@ _KeyWord.TOOL                 = "Tool";
 _KeyWord.DATATYPE             = "DataType";
 _KeyWord.PARAM_TYPE_MODIFIER  = "ParamTypeModifier";
 _KeyWord.SUBSIDIARY           = "Subsidiary";
-
-*/
-/*
-//GOOD IDEA
-//一个参数类型表
-Types[ String, Optional String = "", Optional Number = 0, String, Number, Optional Boolean = false, Boolean ];
-
-//全部可能的匹配
-//传入实参表                           //修整实参表
-[ "A", "B", 1, "C", 1, true, true ] -> [ "A", "B", 1, "C", 1, true, true ]; //最大实参数
-[ "A", "B", 1, "C", 1, true ]       -> [ "A", "B", 1, "C", 1, false, true ];
-[ "A", "B", "C", 1, true ]          -> [ "A", "B", 0, "C", 1, false, true ];
-[ "A", "C", 1, true ]               -> [ "A", "", 0, "C", 1, false, true ]; //最小实参数
-
-[ "A", "B", "C", 1, true, true ]    -> [ "A", "B", 0, "C", 1, true, true ];
-[ "A", "C", 1, true, true ]         -> [ "A", "", 0, "C", 1, true, true ];
-[ "A", "C", 1, true, true ]         -> [ "A", "", 0, "C", 1, true, true ];
-
-[ "A", 1, "C", 1, true ]            -> [ "A", "", 1, "C", 1, false, true ];
-
-//筛选
-SELECTED = {};
-params   = [ "A", "B", 1, "C", 1, true, true ];
-types    = [ String, Optional String = "", Optional Number = 0, String, Number, Optional Boolean = false, Boolean ];
-TPOS     = [];
-MUSTS    = [];
-OPTS     = [];
-//索引分析
-TPOS[0]  = LIMIT(= INDEX(=0) - OPTLEN(=0), INDEX(=0) ) = [ 0, 0 ]; //must
-TPOS[1]  = LIMIT(= INDEX(=1) - OPTLEN(=0), INDEX(=1) ) = [ 1, 1 ]; //optional
-TPOS[2]  = LIMIT(= INDEX(=2) - OPTLEN(=1), INDEX(=2) ) = [ 1, 2 ]; //optional
-TPOS[3]  = LIMIT(= INDEX(=3) - OPTLEN(=2), INDEX(=3) ) = [ 1, 3 ]; //must
-TPOS[4]  = LIMIT(= INDEX(=4) - OPTLEN(=2), INDEX(=5) ) = [ 2, 4 ]; //must
-TPOS[5]  = LIMIT(= INDEX(=5) - OPTLEN(=2), INDEX(=4) ) = [ 3, 5 ]; //Optional
-TPOS[6]  = LIMIT(= INDEX(=6) - OPTLEN(=3), INDEX(=6) ) = [ 3, 6 ]; //must
-
-MUSTS = [ TPOS[0], TPOS[3], TPOS[4], TPOS[6] ];
-OPTS  = [ TPOS[1], TPOS[2], TPOS[5] ];
-
-//先处理必选项
-while( pos = MUSTS.shift() ){
-    finded = false;
-    for( s = pos[0], e = pos[1], e >= s; e-- ){
-        index = e;
-        item  = params[ index ];
-        //pos[1] 的值是形参在形参表中的实际索引
-        if( !( index in params ) || item === SELECTED || !( item instanceof types[ pos[1] ] ) );
-            continue;
-        }
-        SELECTED[ pos[1] ] = item;
-        params[ index ]    = SELECTED;
-        finded             = true;
-        break;
-    }
-
-    if( !finded ){
-        throw Error;
-    }    
-}
-//必选项处理完成后实参表将会是这样
-[ SELECTED, "B", 1, SELECTED, SELECTED, true, SELECTED ]
-
-//处理可选项
-
-while( pos = OPTS.shift() ){
-    finded = false;
-    for( s = pos[0], e = pos[1], e >= s; e-- ){
-        index = e;
-        item  = params[ index ];
-        //pos[1] 的值是形参在形参表中的实际索引
-        if( !( index in params ) || item === SELECTED || !( item instanceof types[ pos[1] ] ) );
-            continue;
-        }
-        SELECTED[ pos[1] ] = item;
-        params[ index ]    = SELECTED;
-        finded             = true;
-        break;
-    }
-
-    if( !finded ){
-        SELECTED[ pos[1] ] = default; //如果未找到就将关联项置为可选参数设置的默认值
-    }    
-}
-
-//可选项处理完成后实参表将会是这样
-[ SELECTED, SELECTED, SELECTED, SELECTED, SELECTED, SELECTED, SELECTED ]
-
-
-//啧啧 这脑子 真TMD的帅。
-// ^_^ 这，这，激动了 不过我不能保证上面无BUG。目前是这样，一路下来纯是自己意淫出来的。
 */

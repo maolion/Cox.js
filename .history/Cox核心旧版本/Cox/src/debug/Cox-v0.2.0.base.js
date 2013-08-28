@@ -1472,6 +1472,7 @@
                         "在定义重载函数接口的参数列表中 最后一个参数必须是Function类型实例" 
                     );
                 }
+
                 if( paramtypes.length === 1 && _Util.is( paramtypes[0], _Signature ) ){
                     signature = paramtypes[0];
                 }else{
@@ -1481,6 +1482,7 @@
                 this.clear( signature );
                 signature.__BUILD_FUNCTION__ = func;
                 olist.push( signature );
+                
             },
             /**
              * __Overload__.clear 清除重载列表中的某一指定重载或清空重载列表
