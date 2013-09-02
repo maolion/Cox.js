@@ -1967,7 +1967,7 @@
             var 
                 XFunction_unit    = new _UTest( "XFunction" ),
                 ParamTypeModifier = null,
-                xPrototype        = null
+                METHODS           = null
             ;
 
 
@@ -2248,7 +2248,7 @@
                 } )
             );
         
-            xPrototype = {
+            METHODS    = {
                 /**
                  * define 定义重载
                  * @param { Type } types [ Type, Type, ... ]
@@ -2296,9 +2296,8 @@
                         count = list.length,
                         types = SLICE.call( arguments )
                     ;
-                    
                     for( var i = 0; i < count; i++ ){
-                        if( list[i].equals( types ) ){
+                        if( list[i].equals.apply( list[i], types ) ){
                             return true;
                         }
                     }
@@ -2366,7 +2365,7 @@
                     main.__COX_SIGN__                    = arguments[ arguments.length - 1 ].name
                                                         || "anonymous";
                     //为创建的函数添加需要被继承的一些方法
-                    _XObject.mix( main, xPrototype, true );
+                    _XObject.mix( main, METHODS   , true );
                     //定义一个重载
                     main.define.apply( main, arguments );
 
@@ -2453,12 +2452,17 @@
                     assert( (f2(2), v) === 2, "检测是否能正确执行-11" );
                     assert( (f2(2,3), v) === 8, "检测是否能正确执行-12" );
                     assert( f2(1,0) === 1, "检测是否能正确执行-13" );
+                    assert( f2.defined( Number, Number ) === true, "检测是否能正确执行-14" );
+                    assert( f2.defined( ) === true, "检测是否能正确执行-15" );
+                    assert( f2.defined( _ParamTypeTable( Number ) ) === true, "检测是否能正确执行-16" );
+                    assert( f2.defined( _ParamTypeTable( String ) ) === false, "检测是否能正确执行-17" );
+                    assert( f2.defined( Number, String ) === false, "检测是否能正确执行-18" );
+                    
                     console.log( f1 );
                     console.log( f2 );
                     //assert( f1, "检测是否能正确执行-3" )
                 } )
             );
-            
             
             XFunction_unit.subUnit( "XFunction" ).append(
                 new _UTest( "bind", function( assert ){
@@ -2504,10 +2508,346 @@
 
             gunit.append( XFunction_unit );
             //XFunction_unit.subUnit( "XFunction" ).test();
-            XFunction_unit.test();
+            //XFunction_unit.test();
 
         }();
 
+
+        /*
+          面向对象工具
+          面向对象是一种对现实世界理解和抽象的方法，通过面向对象的方式，将现世界
+          的物抽象成对象，现实世界的关系抽象成类、继承，帮助人们实现对现实世界的
+          抽像与数字建模。面向对象能有效提高编程的效率，面向对象是指一种程序设计
+          范 型，同时也是一种程序开发的方法。面向对象编程技术提搞软件的重用性、
+          灵活性和扩展性。
+         */
+        void function __IMPLEMENT_OOP__(){
+            var 
+                oop_unit = new _UTest( "Oop" )
+            ;
+
+            
+            _Extends  = _KeyWord( 
+                "Extends", _KeyWord.SUBSIDIARY, 
+                ObjectFactory( function Extends(){
+                    this.parents = _XList.unique( SLICE.call( arguments ) );
+                } )
+            );
+
+            _Implements = _KeyWord(
+                "Implements", _KeyWord.SUBSIDIARY, 
+                ObjectFactory( function Implements(){
+                    var 
+                        interfaces = _XList.unique( SLICE.call( arguments ) ),
+                        count      = interfaces.length
+                    ;
+                    for( var i = 0; i < count; i++ ){
+                        if( !( interfaces[i] instanceof _Interface ) ){
+                            throw new TypeError( "无效的接口类型" );
+                        }
+                    }
+                    this.interfaces = interfaces;
+                } )
+            );
+
+            oop_unit.append(
+                new _UTest( "Modiffier", function( assert ){
+                    assert( _is( _KeyWord, _Extends, _KeyWord.SUBSIDIARY ), "检测Extends是否为关键字" );
+                    assert( _is( _KeyWord, _Implements, _KeyWord.SUBSIDIARY ), "检测Implements是否为关键字" );
+                    assert( _Extends(), "检测是否能正确执行-1" );
+                    assert( _Extends(), "检测是否能正确执行-2" );
+            
+                } )
+            );
+
+            //检测接口定义
+            function InterfaceCheckOut( methods ){
+                _XObject.forEach( 
+                    methods, true, function( method, key ){
+                        //接口成员只允许是Function 或 ParamTypeTable类型实例(或集合)
+                        if( method === Function ){
+                            return;
+                        }else if( method instanceof _ParamTypeTable ){
+                            methods[ key ] = [ _ParamTypeTable ];
+                            return;
+                        }else if( method instanceof Array ){
+                            for( var i = 0, l = method.length; i < l; i++ ){
+                                if( !( method instanceof _ParamTypeTable ) ){
+                                    return;        
+                                }
+                            }
+                        }
+                        throw new TypeError( "无效的接口定义" );
+                    }
+                );
+            }
+
+            /**
+             * Interface 接口定制工具
+             * 接口里允许包含类/类实例方法（函数）的签名信息(由方法名称和函数参
+             * 数类型组成), 还允许继承其他（或多个）的接口类
+             * @param { String } name
+             * @param { Extends } extend 接口需要继承的其他接口，允许指定多个
+             * @param { Function } define 定义接口的处理程序
+             * 处理器被调用时会有两个参数对象被传入，第一个参数对象接受类方法的
+             * 定义，第二个参数对象接受类实例方法的定义
+             */
+            _Interface = _KeyWord(
+                "Interface", _KeyWord.DATATYPE, ObjectFactory( function Interface( name, extend, define ){
+                    var 
+                        cmethods  = {},
+                        imethods  = {}
+                    ;
+                    if( extend ){
+                        for( var i = 0, l = extend.parents.length; i < l; i++ ){
+                            if( !( extend.parents[i] instanceof _Interface ) ){
+                                throw new TypeError(
+                                    "接口类只允许扩展由Interface操作符创建的接口类"
+                                );
+                            }
+
+                        }
+
+                        extend = extend.parents;
+                    }
+
+                    if( define && typeof define !== "function" ){
+                        throw new TypeError(
+                            "接口类只允许使用Function类型的实例作为接口类的类体（提供公共接口的定义）"
+                        );
+                    }
+
+                    this.__COX_INTERFACE_EXTENDS__  = extend || null;
+                    this.__COX_INTERFACE_CMETHODS__ = cmethods;
+                    this.__COX_INTERFACE_IMETHODS__ = imethods;
+                    this.__COX_INTERFACE_NAME__     = name = name || "anonymous" ;
+                    this.__COX_SIGN__               = "[Interface " + name + "]";
+
+                    cmethods.prototype = {};
+
+                    define.call( cmethods, cmethods, imethods );
+                    delete cmethods.constructor;
+                    _XObject.mix( imethods, cmethods.prototype, true );
+                    delete cmethods.prototype;
+
+                    //检测接口的定义
+                    InterfaceCheckOut( cmethods );
+                    InterfaceCheckOut( imethods );
+                } )
+            );
+            
+            /**
+             * 
+             * extended 检查接口类是否扩展了另一接口类（父接口类）
+             * @param { _Interface } iface 接口类
+             * @return { Boolean }
+             */
+            _Interface.prototype.extended  = function( iface ){
+                var 
+                    parents = this.__COX_INTERFACE_EXTENDS__
+                ;
+                if( !parents || !( iface instanceof _Interface ) ){
+                    return false;
+                }
+
+                if( _XList.indexOf( parents, iface ) !== -1 ){
+                    return true;
+                }
+
+                for( var i = 0, l = parents.length; i < l ; i++ ){
+                    if( parents[i].extended( iface ) ){
+                        ret = true;
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            /**
+             * @method implementIn 检查一个对象是否实现了接口类提供（描述）的所有接口（方法集）
+             * 如果实现接口类的对象有未实现的接口或者实现与接口类描述的对应接口信息不匹配则会抛出异常。
+             * @param { Object } obj 接口类的实现体
+             * @return { Boolean }
+             */
+            _Interface.prototype.implementIn = function ( obj ){
+                var 
+                    _this   = this,
+                    parents  = this.__COX_INTERFACE_EXTENDS__,
+                    ignores = this.__IGNORES__ instanceof Array ? this.__IGNORES__ : [],
+                    cls     = typeof obj === "function" ? obj : obj.constructor,
+                    objs    = [
+                        {
+                            methods : this.__COX_INTERFACE_CMETHODS__,
+                            obj     : cls
+                        },
+                        {
+                            methods : this.__COX_INTERFACE_IMETHODS__,
+                            obj     : typeof obj === "function" ? obj.prototype : obj
+                        }
+                    ]
+                ;
+
+                //确保多个相同的接口类的implementIn方法只被调用一次
+                if( _XList.indexOf( ignores, this ) === -1 ){
+                    ignores.push( this );
+                }else{
+                    return true;
+                }
+
+
+                if( parents ){
+                    for( var i = 0, l = parents.length; i < l; i++ ){
+                        var parent = parents[i];
+                        parent.__IGNORES__ = ignores;
+                        parent.implementIn( obj );
+                        delete parent.__IGNORES__;
+                    }
+                }
+
+                while( obj = objs.shift() ){
+                    _XObject.forEach( obj.methods, true, function( type, key ){
+                        var method = obj.obj[key];
+                        /*if( typeof obj.obj !== "function" && key === "constructor" && 
+                            method === cls && cls.__CLASS_INFO__
+                        ){
+                            method = cls.__CLASS_INFO__.__CONSTRUCTOR__ 
+                        }*/
+
+                        if( key in obj.obj ){
+                            if( type === Function && typeof method !== "function" ){
+                                throw new TypeError(
+                                    _this + "接口类中的`" + key + "`接口以非Function类型实例被实现"
+                                );
+                            }else if( typeof type === Array ){
+                                for( var i = 0, l = type.length; i < l; i++ ){
+                                    if( typeof method !== "function"
+                                     || typeof method.defined !== "function" 
+                                     || !method.defined( type[i] ) 
+                                    ){
+                                        throw new TypeError(
+                                            _this + "接口类中的`" + key + "`接口未被正确实现"
+                                        );        
+                                    }
+                                }
+                            }   
+                        }else{
+                            throw new Error(
+                                _this + "接口类中的`" + key + "`接口未被实现"
+                            );
+                        }
+                    } );        
+                }
+
+                return true;
+            };
+
+            _Interface.prototype.__instancelike__ = function( obj ){
+                if( !obj || typeof obj !== "object" ){
+                    return false;
+                }
+
+                try{
+                    this.implementIn( obj );
+                    return true;        
+                }catch( e ){
+                    return false;
+                }
+
+            };
+
+            _Interface.prototype.toString = function toString(){
+                return this.__COX_SIGN__;
+            };
+
+            oop_unit.append(
+                new _UTest( "Interface", function( assert ){
+                    var 
+                        A1 = _Interface( "A1", null, function( Static, Public ){
+
+                        } ),
+
+                        A2 = _Interface( "A2", null, function( Static, Public ){
+                            Static.m1 = Function;
+                            Public.m1 = _ParamTypeTable();
+                            Public.m2 = [
+                                _ParamTypeTable( ),
+                                _ParamTypeTable( String ),
+                                _ParamTypeTable( String, Boolean, String ),
+                            ];
+                        } ),
+
+                        A3 = _Interface( "A3", _Extends( A2 ), function( Static, Public ){
+                            Static.m1 = _ParamTypeTable( Boolean );
+                            Public.m2 = _ParamTypeTable( Boolean, String );
+                        } ),
+                        A4 = null,
+                        v  = null
+                    ;
+                    assert( _is( _KeyWord, _Interface, _KeyWord.DATATYPE ), "检测是否为关键字" );
+                    assert( _Interface, "检测是否能正确执行-1" );
+                    assert( A1 instanceof _Interface, "检测是否能正确执行-2" );
+                    assert( A2 instanceof _Interface, "检测是否能正确执行-3" );
+                    assert( A2.__COX_INTERFACE_IMETHODS__.m1 instanceof Array, "检测是不能正确执行-4" );
+                    assert( A3 instanceof _Interface, "检测是否能正确执行-5" );
+                    
+                    try{
+                        A4 = _Interface( "A4", null, function( Static, Public ){
+                            Static.m1 = function(){}
+                            Public.m1 = String;
+                        } );
+                    }catch( e ){
+                        v = Error;
+                    }
+
+                    assert( v === Error, "检测是否能正确执行-4" );
+                    
+                    try{
+                        A4 = _Interface( "A4", _Extends( A1, A2, A3, Function ), function( Static, Public ){
+
+                        } );
+                    }catch( e ){
+                        v = TypeError;
+                    }
+                    
+                    assert( v === TypeError, "检测是否正确执行-5" );
+
+                    A4 = _Interface( "A4", _Extends( A1, A3 ), function( Static, Public ){
+                        Static.m2 = _ParamTypeTable( Boolean );
+                    } );
+
+                    assert( A3.extended( A2 ), "检测是否能正确执行-6" );
+                    assert( !A3.extended( A1 ), "检测是否能正确执行-7" );
+                    assert( A4.extended( A1 ), "检测是否能正确执行-8" );
+                    assert( A4.extended( A3 ), "检测是否能正确执行-9" );
+                    assert( A4.extended( A2 ), "检测是否能正确执行-10" );
+                    assert( A1.implementIn( {} ), "检测是否能正确执行-11" );
+                    function T1(){
+
+                    }
+                    T1.m1 = _XFunction( Boolean, function(b){} );
+                    T1.m2 = _XFunction( Boolean, function(b){} );
+                    T1.prototype.m1 = _XFunction( function(){} );
+                    T1.prototype.m2 = _XFunction( function(){} );
+                    T1.prototype.m2.define( String, function( s ){} );
+                    T1.prototype.m2.define( Boolean, String, function( b, s ){} );
+                    T1.prototype.m2.define( String, Boolean, String, function( s1, b, s2 ){} );
+                    v = null;
+                    try{
+                        A2.implementIn( {} )
+                    }catch( e ){
+                        v = Error;
+                    }
+                    assert( v === Error, "检测是否能正确执行-12" );
+                    assert( A2.implementIn( T1 ), "检测是否能正确执行-13" );
+                    assert( A3.implementIn( new T1 ), "检测是否能正确执行-14" );
+                    assert( A4.implementIn( new T1 ), "检测是否能正确执行-15" );
+                    assert( _is( A4, new T1 ), "检测是否能正确执行-16" );
+                } )
+            );
+
+            oop_unit.test();
+
+        }();
 
         //gunit.test( true );
 
