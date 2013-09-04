@@ -881,9 +881,11 @@
              * XObject 提供一些用于操作对象数据的一些静态方法集，通过 XObject构
              * 造出的对象与普通对象无任何差别
              */
-            _XObject = _KeyWord( "XObject", _KeyWord.DATATYPE, function XObject(){
-                //...
-            } );
+            _XObject = _KeyWord( 
+                "XObject", _KeyWord.DATATYPE, ObjectFactory( function XObject(){
+                    //...
+                } )
+            );
 
             /**
              * XObject.create 创建一个新对象，并将指定对象作用于新对象原型链上
@@ -2454,6 +2456,7 @@
                     assert( f2(1,0) === 1, "检测是否能正确执行-13" );
                     assert( f2.defined( Number, Number ) === true, "检测是否能正确执行-14" );
                     assert( f2.defined( ) === true, "检测是否能正确执行-15" );
+                    assert( f2.defined( _ParamTypeTable() ) === true, "检测是否能正确执行-015" );
                     assert( f2.defined( _ParamTypeTable( Number ) ) === true, "检测是否能正确执行-16" );
                     assert( f2.defined( _ParamTypeTable( String ) ) === false, "检测是否能正确执行-17" );
                     assert( f2.defined( Number, String ) === false, "检测是否能正确执行-18" );
@@ -2464,6 +2467,8 @@
                 } )
             );
             
+            //XFunction_unit.subUnit( "XFunction" ).test();
+
             XFunction_unit.subUnit( "XFunction" ).append(
                 new _UTest( "bind", function( assert ){
                     var 
@@ -2523,7 +2528,9 @@
          */
         void function __IMPLEMENT_OOP__(){
             var 
-                oop_unit = new _UTest( "Oop" )
+                oop_unit  = new _UTest( "Oop" ),
+                BaseClass = null,
+                ClassMode = null
             ;
 
             
@@ -2560,28 +2567,6 @@
                 } )
             );
 
-            //检测接口定义
-            function InterfaceCheckOut( methods ){
-                _XObject.forEach( 
-                    methods, true, function( method, key ){
-                        //接口成员只允许是Function 或 ParamTypeTable类型实例(或集合)
-                        if( method === Function ){
-                            return;
-                        }else if( method instanceof _ParamTypeTable ){
-                            methods[ key ] = [ _ParamTypeTable ];
-                            return;
-                        }else if( method instanceof Array ){
-                            for( var i = 0, l = method.length; i < l; i++ ){
-                                if( !( method instanceof _ParamTypeTable ) ){
-                                    return;        
-                                }
-                            }
-                        }
-                        throw new TypeError( "无效的接口定义" );
-                    }
-                );
-            }
-
             /**
              * Interface 接口定制工具
              * 接口里允许包含类/类实例方法（函数）的签名信息(由方法名称和函数参
@@ -2596,7 +2581,8 @@
                 "Interface", _KeyWord.DATATYPE, ObjectFactory( function Interface( name, extend, define ){
                     var 
                         cmethods  = {},
-                        imethods  = {}
+                        imethods  = {},
+                        methods   = [ cmethods, imethods ]
                     ;
                     if( extend ){
                         for( var i = 0, l = extend.parents.length; i < l; i++ ){
@@ -2631,8 +2617,27 @@
                     delete cmethods.prototype;
 
                     //检测接口的定义
-                    InterfaceCheckOut( cmethods );
-                    InterfaceCheckOut( imethods );
+                    for( var i = 0, l = methods.length; i < l; i++ ){
+                        var dest = methods[i];
+                        _XObject.forEach( 
+                            dest, true, function( method, key ){
+                                //接口成员只允许是Function 或 ParamTypeTable类型实例(或集合)
+                                if( method === Function ){
+                                    return;
+                                }else if( method instanceof _ParamTypeTable ){
+                                    dest[ key ] = [ method ];
+                                    return;
+                                }else if( method instanceof Array ){
+                                    for( var i = 0, l = method.length; i < l; i++ ){
+                                        if( !( method instanceof _ParamTypeTable ) ){
+                                            return;        
+                                        }
+                                    }
+                                }
+                                throw new TypeError( "无效的接口定义" );
+                            }
+                        );
+                    }
                 } )
             );
             
@@ -2707,18 +2712,21 @@
                 while( obj = objs.shift() ){
                     _XObject.forEach( obj.methods, true, function( type, key ){
                         var method = obj.obj[key];
-                        /*if( typeof obj.obj !== "function" && key === "constructor" && 
-                            method === cls && cls.__CLASS_INFO__
-                        ){
-                            method = cls.__CLASS_INFO__.__CONSTRUCTOR__ 
-                        }*/
 
                         if( key in obj.obj ){
+
+                            if( typeof obj.obj !== "function" 
+                             && key === "constructor"
+                             && cls.__COX_CLASS_CLASSINFO__
+                            ){
+                                method = cls.__COX_CLASS_CLASSINFO__.CONSTRUCTOR;
+                            }
+
                             if( type === Function && typeof method !== "function" ){
                                 throw new TypeError(
                                     _this + "接口类中的`" + key + "`接口以非Function类型实例被实现"
                                 );
-                            }else if( typeof type === Array ){
+                            }else if( type instanceof Array ){
                                 for( var i = 0, l = type.length; i < l; i++ ){
                                     if( typeof method !== "function"
                                      || typeof method.defined !== "function" 
@@ -2730,6 +2738,7 @@
                                     }
                                 }
                             }   
+
                         }else{
                             throw new Error(
                                 _this + "接口类中的`" + key + "`接口未被实现"
@@ -2844,9 +2853,805 @@
                     assert( _is( A4, new T1 ), "检测是否能正确执行-16" );
                 } )
             );
+            
+            //oop_unit.subUnit( "Interface" ).test();
 
+            /**
+             * ClassMode 类模式
+             * @param { String } name
+             */
+            _ClassMode = _KeyWord(
+                "ClassMode", _KeyWord.SUBSIDIARY, ObjectFactory( function ClassMode( name ){
+                    this.__COX_CLASS_MODE_NAME__ = name;
+                } )
+            );
+
+            _ClassMode.prototype.toString = function toString(){
+                return this.__COX_CLASS_MODE_NAME__;
+            }    
+
+            _ClassMode.prototype.newClass = EMPTY_FUNCTION;
+            _ClassMode.prototype.prefect  = EMPTY_FUNCTION;
+            
+            _Abstract = _ClassMode( "Abstract" );
+
+            _Abstract.newClass = function newClass(){   
+                return function(){
+                    throw new SynataxError(
+                        "抽象类不允许被实例化！"
+                    );
+                };
+            };
+
+            _Abstract.implementIn = function implementIn( absclass, obj ){
+                var 
+                    info    = absclass.__COX_CLASS_CLASSINFO__,
+                    _this   = absclass,
+                    cls     = ( typeof obj === "function" ? obj : obj.constructor ),
+                    objs    = [
+                        {
+                            methods : info.CLASS_METHODS,
+                            obj     : cls
+                        },
+                        {
+                            methods : info.INSTANCE_METHODS,
+                            obj     : typeof obj === "function" ? obj.prototype : obj
+                        }
+                    ]
+                ;
+                while( obj = objs.shift() ){
+                    _XObject.forEach( obj.methods, true, function( type, key ){
+                        var method = obj.obj[key];
+                        //console.log( key, "xxxx");
+                        
+                        if( key in obj.obj ){
+                            if( typeof obj.obj !== "function" 
+                             && key === "constructor"
+                             && cls.__COX_CLASS_CLASSINFO__
+                            ){
+                                method = cls.__COX_CLASS_CLASSINFO__.CONSTRUCTOR;
+                            }
+                            if( type === Function && typeof method !== "function" ){
+                                throw new TypeError(
+                                    _this + "抽象类中的`" + key + "`接口以非Function类型实例被实现"
+                                );
+                            }else if( type instanceof Array ){
+                                for( var i = 0, l = type.length; i < l; i++ ){
+                                    if( typeof method !== "function"
+                                     || typeof method.defined !== "function" 
+                                     || !method.defined( type[i] ) 
+                                    ){
+                                        throw new TypeError(
+                                            _this + "抽象类中的`" + key + "`接口未被正确实现"
+                                        );        
+                                    }
+                                }
+                            }   
+                        }else{
+                            throw new Error(
+                                _this + "抽象类中的`" + key + "`接口未被实现"
+                            );
+                        }
+
+                    } );        
+                }
+
+                return true;
+            };
+
+            _Abstract.perfect = function perfect( classinfo ){
+                var 
+                    newclass    = classinfo.CLASS,
+                    proto       = newclass.prototype,
+                    constructor = proto.constructor,
+                    tostring    = null,
+                    cmethods    = {}, 
+                    imethods    = {},
+                    methods     = [
+                        { source : newclass, dest : cmethods },
+                        { source : proto, dest : imethods }
+                    ]
+                ;
+
+                delete cmethods.constructor;
+
+                for( var i = 0, l = methods.length; i < l; i++ ){
+                    var 
+                        source = methods[i].source,
+                        dest   = methods[i].dest
+                    ;
+                    _XObject.forEach( source, true, function( method, key ){
+                        if( method === Function ){
+                            dest[ key ] = method;
+                            delete source[ key ];
+                        }else if( method instanceof _ParamTypeTable ){
+                            dest[ key ] = [ method ];
+                            delete source[ key ];
+                        }else if( method instanceof Array ){
+                            for( var i2 = 0, l2 = method.length; i2 < l2; i2++ ){
+                                if( !( method[i2] instanceof _ParamTypeTable ) ){
+                                    return;
+                                }
+                            }
+                            dest[ key ] = method;
+                            delete source[ key ];
+                        }
+                    } );
+                }
+                classinfo.CLASS_METHODS    = cmethods;
+                classinfo.INSTANCE_METHODS = imethods;
+                if( constructor !== newclass ){
+                    if( imethods.constructor !== constructor 
+                     && !( constructor instanceof _ParamTypeTable )
+                    ){
+                        if( typeof constructor === "function" ){
+                            classinfo.CONSTRUCTOR = constructor;
+                        }else{
+                            throw new TypeError(
+                                "无效的构造函数定义"
+                            );
+                        }
+                    }
+                }
+
+                tostring = newclass.toString;
+                _XObject.mix( newclass, BaseClass, true );
+                
+                delete newclass.__COX_KEYWORD_NAME__;
+                newclass.__COX_SIGN__ = "[Abstract Class " + classinfo.NAME + "]";
+                newclass.__COX_CLASS_CLASSINFO__ = classinfo;
+                if( tostring !== BaseClass.toString ){
+                    newclass.toString = tostring;
+                }
+
+                delete newclass.constructor;
+                newclass.implementIn = function( obj ){
+                    return _Abstract.implementIn( newclass, obj );
+                }
+                newclass.prototype = proto;
+            };
+
+            _Single = _ClassMode( "Single" );
+
+            _Single.newClass = function newClass( classinfo ){
+                return function(){
+                    return _Single.getInstance.apply( classinfo.CLASS, arguments );
+                };
+            };
+
+            _Single.getInstance = function getInstance(){
+                var classinfo = this.__COX_CLASS_CLASSINFO__;
+                //返回同一个实例对象
+                if( classinfo.SINGLE_INSTANCE instanceof this ){
+                    return classinfo.SINGLE_INSTANCE;
+                }
+                //第一实例化
+                classinfo.CONSTRUCTOR.apply(
+                    ( classinfo.SINGLE_INSTANCE = newObject( this.prototype ) ),
+                    arguments
+                );
+                return classinfo.SINGLE_INSTANCE;
+            };
+
+            _Finaly = _ClassMode( "Finaly" );
+
+            _Finaly.newClass = function newClass( classinfo ){
+                return function(){
+                    if( this.constructor !== classinfo.CLASS 
+                     || !( this instanceof classinfo.CLASS )
+                    ){
+                        throw new Error(
+                            classinfo.__CLASS__ + "类不能在当前情况情况下进行实例化"
+                        );
+                    }
+                    classinfo.CONSTRUCTOR.apply( this, arguments );
+                };
+            };
+
+            _Entity = _ClassMode( "Entity" );
+
+            _Entity.newClass = function newClass( classinfo ){
+                return function(){
+                    classinfo.CONSTRUCTOR.apply( this, arguments );
+                }
+            }; 
+
+            _Single.perfect = _Finaly.perfect = _Entity.perfect = function perfect( classinfo ){
+                var 
+                    newclass    = classinfo.CLASS,
+                    proto       = newclass.prototype,               
+                    constructor = proto.constructor,
+                    _super      = classinfo.SUPER,
+                    sinfo       = _super && _super.__COX_CLASS_CLASSINFO__,
+                    tostring    = null
+                ;
+                tostring = newclass.toString;
+                _XObject.mix( newclass, BaseClass, true );
+
+                if( classinfo.MODE === _Single ){
+                    newclass.getInstance = _Single.getInstance;
+                }
+
+                if( tostring !== BaseClass.toString  ){   
+                    newclass.toString = tostring;
+                }
+
+                tostring = proto.toString;
+                _XObject.mix( proto, BaseClass.prototype, true );
+                
+                delete newclass.__COX_KEYWORD_NAME__;
+
+                if( classinfo.SUPER && newclass.implementIn === classinfo.SUPER.implementIn ){
+                    delete newclass.implementIn;
+                }
+
+                newclass.__COX_SIGN__            = "[" + (
+                    classinfo.MODE === _Entity ? "" : classinfo.MODE.__COX_CLASS_MODE_NAME__ + " "
+                ) + "Class " + classinfo.NAME + "]";
+                newclass.__COX_CLASS_CLASSINFO__ = classinfo;
+                if( tostring !== BaseClass.prototype.toString ){
+                    proto.toString = tostring;
+                }
+                
+
+                proto.constructor = constructor;
+
+                if( constructor !== newclass ){
+                    if( constructor !== Function && typeof constructor === "function" ){
+                        classinfo.CONSTRUCTOR = constructor;
+                    }else{
+                        throw new TypeError(
+                            "在类定义中为类实例提供的constructor成员只允许赋值为 Function类型实例"
+                        );
+                    }
+                }
+                /*if( sinfo && sinfo.MODE === _Abstract ){
+                    _Abstract.implementIn( _super, newclass );
+                }*/
+                
+                for( var i = 0, l = classinfo.IMPLEMENTS.length; i < l; i++ ){
+                    classinfo.IMPLEMENTS[i].implementIn( newclass );
+                }
+
+                newclass.prototype = proto;
+            };
+
+            /**
+             * BaseClass 其类
+             */
+            BaseClass = _KeyWord(
+                "BaseClass", _KeyWord.DATATYPE, ObjectFactory( 
+                    EMPTY_FUNCTION,
+                    _XObject.prototype 
+                )
+            );
+
+            BaseClass.__COX_SIGN__ = "[Class BaseClass]";
+
+            BaseClass.__COX_CLASS_CLASSINFO__ = {
+                NAME            : "BaseClass",
+                MODE            : _Entity,
+                SUPER           : null,
+                IMPLEMENTS      : null,
+                CLASS           : BaseClass,
+                CONSTRUCTOR     : BaseClass,
+                SINGLE_INSTANCE : null
+            };
+
+            /**
+             * @static method implemented 一个类是否实现了某一接口类
+             * @param { _Interface } itfn 接口类
+             * @return { Boolean }
+             */
+            BaseClass.implemented = function implemented( inf ){
+                var 
+                    classinfo = this.__COX_CLASS_CLASSINFO__
+                ;
+                if( _XList.indexOf( classinfo.IMPLEMENTS, inf ) !== -1 ){
+                    return true;
+                }
+                for( var i = 0, l = classinfo.IMPLEMENTS.length; i < l; i++ ){
+                    if( classinfo.IMPLEMENTS[i].extended( inf ) ){
+                        return true;
+                    }
+                }                
+
+                return false;
+            };
+
+            /**
+             * @static method extended 一个类是否扩展了另一个类
+             * @param { Class } cls
+             * @return { Boolean }
+             */
+            BaseClass.extended = function extended( cls ){
+                return this.prototype instanceof cls;
+            };
+
+            BaseClass.toString = function toString(){
+                return this.__COX_SIGN__;
+            };
+
+            /**
+             * @method Super 子类方法中访问父类实例属性或调用父类实例方法
+             * @param { String } key 父类实例属性的标识符
+             * @param { Object } args 新值或调用参数(参数列表就是 第二位到最后)
+             * @return { Object } 返回父类实例的成员的数值或 调用父类实例方法成员时得到的返回值
+             */
+            BaseClass.prototype.Super = function ( key, args ){
+                var 
+                    args   = SLICE.call( arguments, 1 ),
+                    info   = this.constructor.__COX_CLASS_CLASSINFO__,
+                    _super = null,
+                    sinfo  = null,
+                    value  = null,
+                    prop   = null
+                ;
+
+                if( !( typeof key === "string" || key instanceof String ) ){
+                    throw new TypeError( 
+                        "类实例 Super( key, args )方法的 key参数项只接受 String类型实例" 
+                    );
+                }
+
+                key = key === "constructor" || !key ? "CONSTRUCTOR" : key;
+
+                if ( !this.__COX_CSLEVEL__ ) {
+                    this.__COX_CSLEVEL__ = info.SUPER;
+                }
+
+                _super = this.__COX_CSLEVEL__;
+                sinfo  = _super.__COX_CLASS_CLASSINFO__;
+                
+                if( _super ){
+                    if( key === "CONSTRUCTOR" && sinfo ){
+                        prop  = sinfo[ key ];
+                    }else{
+                        if( !( key in _super.prototype )  ){ 
+                            throw new Error(
+                                "在 " + _super + "类 中没有定义 `" + key + "`成员"
+                            );
+                        }
+                        prop = _super.prototype[key];
+                    }
+
+                    if( typeof prop === "function" ){
+                        this.__COX_CSLEVEL__ = sinfo && sinfo.SUPER || null;
+                        value = prop.apply( this, args );
+                    }else{
+                        if( obj && args.length ){
+                            obj[key] = args[0];
+                        }
+                        value = obj[key];
+                    }
+                }
+
+                delete this.__COX_CSLEVEL__;
+                return value;
+            };
+
+
+            /**
+             * @method instanceOf 一个类实例是否是某一类型的实例
+             * @param { Function/_Interface  } cls 类
+             * @return { Boolean }
+             */ 
+            BaseClass.prototype.instanceOf = function( cls ){
+                if( cls instanceof _Interface ){
+                    return this.constructor.implemented( cls );
+                }else{
+                    return this instanceof cls;
+                }
+            };
+
+            BaseClass.prototype.toString = function toString(){
+                return this.__COX_SIGN__;
+            };
+
+            /**
+             * Class 类定义工具
+             * 类为创建的对象定义拥有哪些状态和操作这些状态的方法,类可以继承（扩
+             * 展）其他类（父类），因此它得到父类的成员（状态和方法），
+             * 接口类定义了需要被实现的方法，类如果定义了要实现的接口类，那么它
+             * 必须将接口类中的方法全部实现
+             * 类有不同的模式，每一种模式都有它所需要的特殊要求
+             * Abstract 抽象类 以父类形式被使用，它抽象出众多类相同的特性，它可
+             *          以定义抽象方法，让继承它的子类去实现，抽象类不允许被实例
+             *          化
+             * Single   单例模式，规定类只拥有唯一的一个实例化对象
+             * Finaly   最终类，它规定类为最终类，不需要也不能被其他类扩展
+             * Entity   普通类，没什么好说的
+             * @param { String } classname 类名
+             * @param { ClassMode } mode 类模式
+             * @param { Extends } parent 指定需要被扩展的父类，类只允许扩展一
+             * 个父类
+             * @param { Implements } interface 指定需要被实现的接口类，允许实现
+             * 多个接口类
+             * @param { Function } define 类定义处理程序
+             */
+            _Class = _KeyWord(
+                "Class", _KeyWord.DATATYPE, 
+                function Class( classname, mode, parent, interfaces, define ){
+                    var 
+                        newclass    = null,
+                        constructor = null,
+                        classname   = classname || define.name,
+                        parent      = parent && parent.parents || [ BaseClass ],
+                        superinfo   = null,
+                        classinfo   = {
+                            NAME            : classname,
+                            MODE            : mode,
+                            SUPER           : null,
+                            IMPLEMENTS      : null,
+                            CLASS           : null,
+                            CONSTRUCTOR     : null,
+                            SINGLE_INSTANCE : null
+                        }
+                    ;
+                    //类的因不同模式有不同的要求，所以类交给模式创建
+                    newclass = classinfo.CLASS = mode.newClass( classinfo );
+
+                    if( parent.length > 1 ){
+                        throw new SynataxError( "类不允许扩展多个父类" );
+                    }
+                    
+                    parent = parent[0] || BaseClass ;
+                    if( typeof parent !== "function" ){
+                        throw new TypeError( "无效的扩展类" );
+                    }
+
+                    superinfo = parent.__COX_CLASS_CLASSINFO__;
+                    if( superinfo && superinfo.MODE === _Finaly ){
+                        throw new Error( parent + "类不允许被扩展" );
+                    }
+
+                    //子类只有得到父类高级函数的克隆版本才能被正常使用
+                    if( superinfo && typeof superinfo.CONSTRUCTOR === "function" ){
+                        constructor = superinfo.CONSTRUCTOR;
+                        if( typeof constructor.clone === "function" ){
+                            constructor = constructor.clone();
+                        }
+                    }
+
+                    //复制父类的类成员到子类上
+                    _XObject.forEach( parent, true, function( item, key ){
+                        if( item && typeof item.clone === "function" ){
+                            newclass[key] = item.clone();
+                        }else{
+                            newclass[key] = item;
+                        }
+                    } );
+
+                    //设置继承链
+                    newclass.prototype  = newObject( parent.prototype );
+                    //高级函数处理
+                    _XObject.forEach( parent.prototype, true, function( item, key ){
+                        if( item && typeof item.clone === "function" ){
+                            newclass.prototype[key] = item.clone(); 
+                        }
+                    } );
+
+                    interfaces = interfaces && interfaces.interfaces || [];
+                    newclass.prototype.constructor = constructor;
+                    define.call( newclass, newclass, newclass.prototype );
+                    delete newclass.constructor;
+
+                    classinfo.IMPLEMENTS = _XList.xUnique( interfaces.concat( 
+                        superinfo && superinfo.IMPLEMENTS || []
+                    ) );
+
+                    //抽象类也是需要被实现的的的的的的的的，内存空间呀呀呀呀呀
+                    if( superinfo.MODE === _Abstract ){
+                        classinfo.IMPLEMENTS.push( parent );
+                    }
+
+                    classinfo.SUPER                  = parent;
+                    classinfo.CONSTRUCTOR            = constructor;
+                    //类定义由模式来进一步的完善和检查
+                    mode.perfect( classinfo );
+                    newclass.prototype.constructor   = newclass;
+                    newclass.prototype.__COX_SIGN__  = "[Object " + classname + "]";
+                    return newclass;
+                }
+            );
+    
+
+            oop_unit.append(
+                new _UTest( "Class.Entity", function( assert ){
+                    var 
+                        C1 = _Class( "C1", _Entity, null, null, function C1( Static, Public ){
+                            //..
+                        } ),
+                        C2 = _Class( "C2", _Entity, null, null, function C2( Static, Public ){
+                            Static.P1 = 0;
+                            Static.toString = function toString(){
+                                return "C2";
+                            };
+                            Static.extended = function(){};
+                            Public.constructor = _XFunction( function(){
+                                Static.P1++;
+                            } );
+                            Public.toString = function toString(){
+                                return "C2 Object[" + Static.P1 + "]";
+                            };
+                            Public.Super = function(){};
+                        } )
+                    ;
+                    assert( C1, "检测是否能正确执行-1" );
+                    assert( C1 instanceof Function, "检测是否能正确执行-2" );
+                    assert( new C1 instanceof C1, "检测是否能正确执行-3" );
+                    assert( C2, "检测是否能正确执行-4" );
+                    assert( C2.P1 === 0, "检测是否能正确执行-5" );
+                    assert( new C2, "检测是否能正确执行-6" );
+                    assert( C2.P1 === 1, "检测是否能正确执行-7" );
+                    assert( new C2().toString !== BaseClass.prototype.toString, "检测是否能正确执行-8" );
+                    assert( C2.toString() === "C2", "检测是否能正确执行-9" );
+                    assert( C2.extended === BaseClass.extended, "检测是否能正确执行-10" );
+                    assert( C1.extended === BaseClass.extended, "检测是否能正确执行-11" );
+                    assert( new C2().Super === BaseClass.prototype.Super, "检测是否能正确执行-12" );
+                    assert( new C2 instanceof BaseClass, "检测是否能正确执行-13" );
+                    assert( new C2 instanceof _XObject, "检测是否能正确执行-14" );
+                    console.log( C1 );        
+                    console.log( new C1().toString() );
+                    console.log( C2 );
+                    console.log( new C2().toString() );
+                } )
+            );
+            //oop_unit.subUnit( "Class.Entity" ).test();
+            
+            oop_unit.append(
+                new _UTest( "Class.Abstract", function( assert ){
+                    var 
+                        C1 = _Class( "C1", _Abstract, null, null, function C1( Static, Public ){
+                            Static.m1 = Function;
+                            Static.P1 = 0;
+                            Public.constructor = _ParamTypeTable();
+                        } ),
+                        t  = null
+                    ;
+
+                    assert( C1, "检测是否能正确执行-1" );
+                    assert( C1 instanceof Function, "检测是否能正确执行-2" );
+                    try{
+                        t = new C1();
+                    }catch( e ){
+                        t = Error;
+                    }
+                    assert( t === Error, "检测是否能正确执行-3" );
+                    assert( !( "m1" in C1 ), "检测是否能正确执行-4" );
+                    assert( C1.P1 === 0, "检测是否能正确执行-5" );
+                    assert( C1.prototype.constructor === C1, "检测是否能正确执行-6" );
+                    console.log( C1 );
+                } )
+            );
+            //oop_unit.subUnit( "Class.Abstract" ).test();
+            
+            oop_unit.append(
+                new _UTest( "Class.Single", function( assert ){
+                    var 
+                        C1 = _Class( "C1", _Single, null, null, function C1( Static, Public ){
+                        } ),
+                        C2 = _Class( "C2", _Single, null, null, function C2( Static, Public ){
+                            Static.count = 0;
+                            Public.constructor = function(){
+                                Static.count++;
+                            }
+                        } ),
+                        t  = null
+                    ;
+                    assert( C1, "检测是否能正确执行-1" );
+                    assert( t = new C1, "检测是否能正确执行-2" );
+                    assert( t === new C1, "检测是否能正确执行-3" );
+                    new C2;
+                    new C2;
+                    assert( new C2 instanceof C2, "检测是否能正确执行-4" );
+                    assert( C2.count === 1, "检测是否能正确执行-5" );
+                    console.log( C2 );
+                    console.log( new C2().toString() );
+                } )
+            );
+            //oop_unit.subUnit( "Class.Single" ).test();
+
+            oop_unit.append(
+                new _UTest( "Class.Finaly", function( assert ){
+                    var 
+                        C1 = _Class( "C1", _Finaly, null, null, function C1( Static, Public ){
+                            
+                        } ),
+                        C2 = null,
+                        t = null
+                    ;
+                    assert( C1, "检测是否能正确执行-1" );
+                    assert( C1 instanceof Function, "检测是否能正确执行-2" );
+                    assert( new C1 instanceof C1, "检测是否能正确执行-3" );
+                    assert( new C1 instanceof BaseClass, "检测是否能正确执行-4" );
+                    assert( new C1 instanceof _XObject, "检测是否能正确执行-5" );
+                    try{
+                        C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Static, Public ){
+
+                        } );
+                    }catch( e ){
+                        t = Error;
+                    }
+                    assert( t === Error, "检测是否能正确执行-6" );
+                } )
+            );
+            //oop_unit.subUnit( "Class.Finaly" ).test();
+
+            oop_unit.append(
+                new _UTest( "Class.Extends", function( assert ){
+                    var 
+                        t  = null,
+                        C1 = _Class( "C1", _Entity, null, null, function C1( Static, Public ){
+                            Static.p1 = -1;
+                            Static.m1 = function(){
+                                //- - 哎......
+                                this.p1--;
+                            };
+                            Public.constructor = _XFunction( function(){
+                                t = "C1";
+                            } );
+                        } ),
+                        C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Static, Public ){
+                            
+                            Public.constructor.define( function(){
+                                this.Super( "constructor" );
+                                t += "->C2";
+                            } );
+
+                            Public.m1 = function(){
+                                this.Super( "m1" );
+                            };
+                        } ),
+                        a = null
+                    ;
+                    assert( C1 instanceof Function, "检测是否能正确执行-1" );
+                    assert( C2 instanceof Function, "检测是否能正确执行-2" );
+                    assert( C1.extended( _XObject ), "检测是否能正确执行-3" );
+                    assert( C1.extended( BaseClass ), "检测是否能正确执行-4" );
+                    assert( C1.extended( C2 ) === false, "检测是否能正确执行-5" );
+                    assert( C2.extended( _XObject ), "检测是否能正确执行-6" );
+                    assert( C2.extended( BaseClass ), "检测是否能正确执行-7" );
+                    assert( C2.extended( C1 ), "检测是否能正确执行-8" );
+                    a = new C2();
+                    assert( a instanceof C2, "检测是否能正确执行-9" );
+                    assert( a instanceof C1, "检测是否能正确执行-10" );
+                    assert( a instanceof BaseClass, "检测是否能正确执行-11" );
+                    assert( a instanceof _XObject, "检测是否能正确执行-12" );
+                    assert( t === "C1->C2", "检测是否能正确执行-13" );
+                    C2.m1();
+                    assert( C2.p1 === -2, "检测是否能正确执行-14" );
+                    assert( C1.p1 === -1, "检测是否能正确执行-15" );
+                    try{
+                        a.m1();
+                    }catch(e){
+                        t = Error;
+                    }
+                    assert( t === Error, "检测是否能正确执行-16" );
+                    assert( a.instanceOf( C1 ), "检测是否能正确执行-17" );
+                    assert( a.instanceOf( C2 ), "检测是否能正确执行-18" );
+                    assert( a.instanceOf( BaseClass ), "检测是否能正确执行-19" );
+                    assert( a.instanceOf( Function ) === false, "检测是否能正确执行-20" );
+                } )
+            );
+
+            //oop_unit.subUnit( "Class.Extends" ).test();
+
+            oop_unit.append(
+                new _UTest( "Class.Implements", function ( assert ){
+                    var 
+                        IA1 = _Interface( "IA1", null, function IA1( Static, Public ){
+
+                        } ),
+                        IA2 = _Interface( "IA2", null, function IA2( Static, Public ){
+                            Static.m1 = Function;
+                            Public.constructor = _ParamTypeTable( Boolean );
+                        } ),
+                        IA3 = _Interface( "IA3", _Extends( IA1, IA2 ), function IA3( Static, Public ){
+                            Public.constructor = [
+                                _ParamTypeTable( String, Boolean ),
+                                _ParamTypeTable( String, String, Boolean )
+                            ];
+                        } ),
+                        IA4 = _Interface( "IA4", null, function IA4( Static, Public ){
+                            Static.m1 = Function;
+                            Public.constructor = _ParamTypeTable( Boolean );
+                        } ),
+                        C1 = _Class( "C1", _Entity, null, _Implements( IA1, IA3 ), function C1( Static, Public ){
+                            Static.m1 = function(){};
+                            Public.constructor = _XFunction( Boolean, function(){
+                                //...
+                            } );
+                            Public.constructor.define( String, Boolean, function(){
+                                //...
+                            } );
+                            Public.constructor.define( String, String, Boolean, function(){
+                                //...
+                            } );
+                        } ),
+                        t = null
+                    ;
+
+                    assert( C1 instanceof Function, "检测是否能正确执行-1" );
+                    assert( new C1( true ) instanceof C1, "检测是否能正确执行-2" );
+                    assert( new C1( "A", true ) instanceof C1, "检测是否能正确执行-3" );
+                    assert( new C1( "A", "B", true ) instanceof C1, "检测是否能正确执行-5" );
+                    try{
+                        new C1();
+                    }catch( e ){
+                        t = Error;
+                    }
+                    assert( t === Error, "检测是否能正确执行-6" );
+                    assert( C1.implemented( IA1 ), "检测是否能正确执行-7" );
+                    assert( C1.implemented( IA2 ), "检测是否能正确执行-8" );
+                    assert( C1.implemented( IA3 ), "检测是否能正确执行-9" );
+                    assert( IA1.implementIn( C1 ) , "检测是否能正确执行-10" );
+                    assert( IA2.implementIn( C1 ) , "检测是否能正确执行-11" );
+                    assert( IA3.implementIn( C1 ) , "检测是否能正确执行-12" );
+                    assert( C1.implemented( IA4 ) === false , "检测是否能正确执行-13" );
+                    assert( IA4.implementIn( C1 ) , "检测是否能正确执行-14" );
+                    assert( new C1( true ).instanceOf( IA1 ), "检测是否能正确执行-15" );
+                    assert( new C1( true ).instanceOf( IA2 ), "检测是否能正确执行-16" );
+                    assert( new C1( true ).instanceOf( IA3 ), "检测是否能正确执行-17" );
+                    assert( new C1( true ).instanceOf( IA4 ) === false, "检测是否能正确执行-17" );
+                } )
+            );
+            //oop_unit.subUnit( "Class.Implements" ).test();
+
+            oop_unit.append(
+                new _UTest( "Class.multiple", function( assert ){
+                    var
+                        I1 = _Interface( "I1", null, function I1( Static, Public ){
+                            Public.m1 = _ParamTypeTable( String );
+                        } ),
+                        I2 = _Interface( "I2", null, function I2( Static, Public ){
+                            Public.constructor = _ParamTypeTable();
+                            Public.m1 = _ParamTypeTable( Boolean, String );
+                        } ),
+                        AC1 = _Class( "AC1", _Abstract, null, _Implements( I2 ), function AC1( Static, Public ){
+                            Public.constructor = _ParamTypeTable( String );
+                            Public.m1 = _XFunction( String, function( v ){
+                                return v;
+                            } );
+                        } ),
+                        AC2 = _Class( "AC2", _Abstract, _Extends( AC1 ), null, function AC2( Static, Public ){
+                            Public.constructor = _ParamTypeTable( String, Static );
+                        } ),
+                        C1 = _Class( "C1", _Entity, _Extends( AC2 ), _Implements( I1, I2 ), function C1( Staitc, Public ){
+                            Public.constructor = _XFunction( function(){} );
+                            Public.constructor.define( String, function(){} );
+                            Public.constructor.define( String, AC2, function(){} );
+                            Public.m1.define( Boolean, String, function(){} );
+                        } ),
+                        C2 = null,
+                        t  = null
+                    ;
+                    assert( C1 instanceof Function, "检测是否正确执行-1" );
+                    assert( C1.implemented( I1 ), "检测是否能正确执行-2" );
+                    assert( C1.implemented( I2 ), "检测是否能正确执行-3" );
+                    assert( C1.implemented( AC1 ), "检测是否能正确执行-4" );
+                    assert( C1.implemented( AC2 ), "检测是否能正确执行-5" );
+                    assert( C1.extended( AC1 ), "检测是否能正确执行-6" );
+                    assert( C1.extended( AC2 ), "检测是否能正确执行-7" );
+                    assert( new C1 instanceof C1, "检测是否能正确执行-8" );
+                    assert( new C1( "A" ) instanceof C1, "检测是否能正确执行-9" );
+                    assert( new C1( "A", new C1 ) instanceof AC1, "检测是否能正确执行-10" );
+                    assert( new C1().m1( "A" ) === "A", "检测是否能正确执行-11" );
+                    assert( new C1().m1( true, "A" ) === undefined, "检测是否能正确执行-12" );
+                    try{
+                        C2 = _Class( "C2", _Entity, _Extends( AC2 ), _Implements( I1, I2 ), function C2( Staitc, Public ){
+                            Public.constructor = function(){}
+                        } )
+                    }catch( e ){
+                        t = Error;
+                    }
+
+                    assert( t === Error, "检测是否能正确执行-13" );
+                } )
+            );
+            oop_unit.subUnit( "Class.multiple" ).test();
+            gunit.append( oop_unit );
             oop_unit.test();
-
         }();
 
         //gunit.test( true );
