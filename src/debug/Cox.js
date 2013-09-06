@@ -92,6 +92,7 @@
             _Single               = null,
             _Finaly               = null,
             _Class                = null,
+            _Event                = null,
             _EventListener        = null,
             _EventSource          = null,
             _Deferred             = null,
@@ -3639,7 +3640,7 @@
                     assert( new C1().m1( "A" ) === "A", "检测是否能正确执行-11" );
                     assert( new C1().m1( true, "A" ) === undefined, "检测是否能正确执行-12" );
                     try{
-                        C2 = _Class( "C2", _Entity, _Extends( AC2 ), _Implements( I1, I2 ), function C2( Staitc, Public ){
+                        C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Staitc, Public ){
                             Public.constructor = function(){}
                         } )
                     }catch( e ){
@@ -3649,14 +3650,886 @@
                     assert( t === Error, "检测是否能正确执行-13" );
                 } )
             );
-            oop_unit.subUnit( "Class.multiple" ).test();
+            //oop_unit.subUnit( "Class.multiple" ).test();
             gunit.append( oop_unit );
-            oop_unit.test();
+            //oop_unit.test();
         }();
 
-        //gunit.test( true );
+        void function __TOOLS__(){
+            var 
+                tools_unit         = new _UTest( "Tools" ),
+                DSTATE_UNFULFILLED = 0,
+                DSTATE_FULFILLED   = 1,
+                DSTATE_REJECTED    = -1,
+                DSTATE_ERROR       = -2,
+                IEvent             = null
+            ;
+            
+            IEvent = _Interface( "IEvent", null, function( Static, Public ){
+                
+                Public.constructor = [
+                    _ParamTypeTable( String ),
+                    _ParamTypeTable( String, Object )
+                ];
 
+                Public.stopPropagation = Function;
+            } );
+
+            /**
+             * EventListeners 事件监听器
+             * 一个事件监听器关联一个事件，监听器组织着处理程序的注册和调用
+             * @param { String } type 监听事件类型（标识)
+             * @param { EventSource } target 事件源
+             */
+            _Class( "EvnetListeners", _Entity, null, null, function( Static, Public ){
+                _EventListener = this;
+                Public.constructor = function( type, target ){
+                    this._relate_event_type = type;
+                    this._target            = target;
+                    this._handlers          = [];
+                    this._processing        = [];
+                };
+                
+                //类实例方法
+
+                /**
+                 * @method notify 通知事件监听程序 关联事件被触发，并执行事件处理器
+                 * @param { Array } args 传递给事件处理器的参数列表
+                 * @param { Object } thisp 事件处理器内 this对象引用
+                 */
+                Public.notify = function( args, thisp ){
+                    var handler = null;
+                    //很好很强大的一个方式
+                    this._processing = this._handlers.slice();
+                    while( handler = this._processing.shift() ){
+                        handler.apply( thisp, args );
+                    }
+
+                };
+                
+                /**
+                 * @method add 添加事件处理器
+                 * @param { Function } handler
+                 */
+                Public.add = function( handler ){
+                    this._handlers.push( handler );
+                };
+                /**
+                 * @method remove 删除已注册（添加）的事件处理器
+                 * @param { Function } handler 
+                 */
+                Public.remove = function( handler ){
+                    if( !handler ){
+                        this._handlers.length   = 0;
+                        this._processing.length = 0
+                    }else{
+                        var 
+                            handlers = this._handlers,
+                            n        = 0
+                        ;
+                        for( var i = 0, l = handlers.length; i < l; i++ ){
+                            if( handlers[i] !== handler ){
+                                handlers[n++] = handlers[i];
+                            }
+                        }
+                        handlers.length  = n;
+
+                        if( this._processing.length ){
+                            this._processing = handlers;
+                        }
+                    }
+                }
+
+                Public.break = function(){
+                    this._processing.length = 0;
+                };
+
+            } );
+            
+            tools_unit.append(
+                new _UTest( "EventListener", function( assert ){
+                    var 
+                        e1 = new _EventListener( "e1", {} ),
+                        t = 0
+                    ;
+
+                    e1.add( function(){
+                        t = 1;
+                    } );
+                    e1.add( function(){
+                        t += 1;
+                    } );
+                    e1.add( function( v ){
+                        t -= v
+                    } );
+                    function f1(){
+                        t = 1000000;
+                    }
+                    e1.add( f1 );
+                    e1.remove( f1 );
+                    assert( e1 instanceof _EventListener, "检测是否能正确执行-1" );
+                    e1.notify( [1], null );
+                    assert( t === 1, "检测是否能正确执行-2" );
+                    e1.notify( [2], null );
+                    assert( t === 0, "检测是否能正确执行-3" );
+                    e1.remove();
+                    e1.notify( [10000], null );
+                    assert( t === 0, "检测是否能正确执行-4" );
+                } )
+            );
+            
+            _Class( "Event", _Entity, null, _Implements( IEvent ), function( Static, Public ){
+                _Event = this;
+                function init( name, options ){
+                    _XObject.mix( this, options || {} , true );
+                    this.name = name;
+                    this.listener = new _EventListener( name, this );
+                }
+
+                Public.constructor = _XFunction( String, init );
+                Public.constructor.define( String, Object, init );
+
+                Public.stopPropagation = function(){
+                    this.listener.break();
+                };
+            } );
+
+            _Class( "EventSource", _Entity, null, null, function( Static, Public ){
+                _EventSource = this;
+                /**
+                 * constructor 构造器
+                 */
+                Public.constructor = function(){
+                    this._events = {};
+                };
+
+                /**
+                 * @method dispatchEvent 为事件源分配事件
+                 * @param { Params( Event ) } newevents
+                 */
+                Public.dispatchEvent = _XFunction( 
+                    _Params( _Event ), function( newevents ){
+                        var 
+                            events = this._events,
+                            _this  = this
+                        ;
+                        for( var i = 0, l = newevents.length; i < l; i++ ){
+                            var event = newevents[i];
+                            events[ event.name ] = event;
+                        }
+                    } 
+                );
+
+                /**
+                 * @method fireEvent 触发某一指定事件
+                 * @param { String } eventname
+                 * @param { Array } args 参数列表，（可选）
+                 * @param { Object } thisp 回调函数内部this指向对象（可选)
+                 */
+                function fireEvent( eventname, args, thisp ){
+                    var event = this._events[ eventname ];
+                    if( event instanceof _Event ){
+                        event.listener.notify( args || [], thisp || this );
+                    }
+                };
+
+                Public.fireEvent = _XFunction( String, fireEvent );
+                Public.fireEvent.define( String, Array, fireEvent );
+                Public.fireEvent.define( String, Array, Object, fireEvent );
+                Public.fireEvent.define( String, Object, function( eventname, thisp ){
+                    fireEvent.call( this, eventname, [], thisp );
+                } );
+                
+                /**
+                 * @method addEventListener 为事件源中所有已分配的事件 添加事件监听处理器
+                 * @param { Function } handler
+                 */
+                Public.addEventListener = _XFunction(
+                    Function, function( handler ){
+                        _XObject.forEach( this._events, true, function( event, name ){
+                            if( event instanceof _Event ){
+                                event.listener.add( handler );
+                            }
+                        } );
+                    }
+                );
+
+                /**
+                 * @method addEventListener 为事件源中事件 添加事件监听处理程序
+                 * @param { String } eventname
+                 * @param { Function } handler
+                 */
+                Public.addEventListener.define( 
+                    String, Function, function( eventname, handler ){
+                        var event = this._events[ eventname ];
+                        if( event instanceof _Event ){
+                            event.listener.add( handler );
+                        }
+                    } 
+                );
+
+                /**
+                 * @method addOnceEventListener 为事件源指定的事件 添加只执行一次的事件处理器
+                 * @param { String } eventname
+                 * @param { Function } handler
+                 */
+                Public.addOnceEventListener = function( eventname, handler ){
+                    var _this = this;
+                    this.addEventListener( eventname, function(){
+                        handler.apply( this, arguments );
+                        _this._events[ eventname ].listener.remove( arguments.callee );
+                    } );
+                };
+
+                /**
+                 * @method removeEventListener 将一事件处理器从所有事件监听器中删除 或 删除所有事件监听器中的所有事件处理器
+                 * @param { String } eventname
+                 * @param { Function } handler
+                 */
+                function removeEventListener1( handler ){
+                    _XObject.forEach( this._events, true, function( event ){
+                        event instanceof _Event && event.listener.remove( handler );
+                    } );
+                }
+
+                function removeEventListener2( eventname, handler ){
+                    var event = this._events[ eventname ];
+                    if( event instanceof _Event ){
+                        event.listener.remove( handler );
+                    }
+                }
+
+                Public.removeEventListener = _XFunction( removeEventListener1 );
+                Public.removeEventListener.define( Function, removeEventListener1 );
+                Public.removeEventListener.define( String, removeEventListener2 );
+                Public.removeEventListener.define( String, Function, removeEventListener2 );
+                
+                /**
+                 * @method getEvent 获取事件源中某一事件对象
+                 * @param { String } eventname
+                 * @return { Event }
+                 */
+                Public.getEvent = function( eventname ){
+                    var event = this._events[ eventname ];
+                    return event instanceof _Event ? event : null;
+                };
+
+                Public.on   = Public.addEventListener;
+                Public.once = Public.addOnceEventListener;
+                Public.un   = Public.removeEventListener;
+            } );
+            
+            tools_unit.append(
+                new _UTest( "EventSource", function( assert ){
+                    var 
+                        obj = new _EventSource(),
+                        t   = 0
+                    ;
+
+                    obj.dispatchEvent(
+                        new _Event( "e1" ),
+                        new _Event( "e2" ),
+                        new _Event( "e3" )
+                    );
+                    obj.addEventListener( "e1", function(){
+                        t = 0;
+                    } );
+                    obj.value = 0;
+                    obj.on( "e1", function(){
+                        t++;
+                    } );
+                    obj.on( "e2", function(v){
+                        t+=v;
+                    } );
+                    function f1(){
+                        t = this.value;
+                    }
+                    obj.on( "e3", f1 );
+
+                    obj.fireEvent( "e1" );
+                    assert( obj instanceof _EventSource, "检测是否能正确执行-1" );
+                    assert( t === 1, "检测是否能正确执行-2" );
+                    obj.fireEvent( "e2", [1] );
+                    assert( t === 2, "检测是否能正确执行-3" );
+                    obj.fireEvent( "e3" );
+                    assert( t === 0, "检测是否能正确执行-4" );
+                    obj.fireEvent( "e3", [] );
+                    assert( t === 0, "检测是否能正确执行-5" );
+                    obj.fireEvent( "e3", [], {value:10} );
+                    assert( t === 10, "检测是否能正确执行-6" );
+                    obj.fireEvent( "e3", {value:10} );
+                    assert( t === 10, "检测是否能正确执行-7" );
+                    obj.removeEventListener( "e3", f1 );
+                    obj.fireEvent( "e3" );
+                    assert( t === 10, "检测是否能正确执行-8" );
+                    obj.un( "e1" );
+                    obj.fireEvent( "e1" );
+                    assert( t === 10, "检测是否能正确执行-9" );
+                    obj.addOnceEventListener( "e1", function(){
+                        t += 10;
+                    } );
+                    obj.fireEvent( "e1" );
+                    assert( t === 20, "检测是否能正确执行-10" );
+                    obj.fireEvent( "e1" );
+                    assert( t === 20, "检测是否能正确执行-11" );
+                    obj.un( "e1" );
+                    t = 0;
+                    obj.on( "e1", function(){
+                        t = 1;
+                    } );
+                    obj.on( "e1", function(){
+                        t += 1;
+                    } );
+                    function f2(){
+                        t = 10000;
+                    }
+                    obj.on( "e1", function(){
+                        t += 1;
+                        obj.un( "e1", f2 );
+                    } );
+                    obj.on( "e1", f2 );
+
+                    obj.on( "e1", function(){
+                        t += 1;
+                        obj.getEvent("e1").stopPropagation();
+                    } );
+                    obj.on( "e1", function(){
+                        t = -1;
+                    } );
+                    obj.on( "e1", function(){
+                        t = -1;
+                    } );
+                    obj.fireEvent( "e1" );
+                    assert( t === 4, "检测是否能正确执行-12" );
+                } )
+            );
+
+            //tools_unit.subUnit( "EventSource" ).test();
+
+            /**
+             * Deferred 延迟操作管理类
+             */
+            _Class( "Deferred", _Entity, _Extends( _EventSource ), null, function( Static, Public ){
+                _Deferred = this;
+
+                Static.DSTATE_UNFULFILLED = DSTATE_UNFULFILLED;
+                Static.DSTATE_FULFILLED   = DSTATE_FULFILLED;
+                Static.DSTATE_REJECTED    = DSTATE_REJECTED;
+                Static.DSTATE_ERROR       = DSTATE_ERROR;
+
+                Public.constructor = function(){
+                    var _this = this;
+                    this.Super( "constructor" );
+                    this._state  = DSTATE_UNFULFILLED;
+                    this._value  = null;
+                    this._error  = null;
+
+                    this.dispatchEvent( 
+                        new _Event( "stateChange", { target : this } ),
+                        new _Event( "resolved", { target : this } ),
+                        new _Event( "rejected", { target : this } ),
+                        new _Event( "done", { target : this } )
+                    );
+
+                    this.__COX_DEFERRED_ERROR__ = function( message ){
+                        var error = new Error( message );
+                        _this._state = DSTATE_ERROR;
+                        _this._error = error;
+                        _this.fireEvent( "stateChange", [ DSTATE_ERROR ] );
+                        _this.fireEvent( "rejected", [ _this._value, error ] );
+                        _this.fireEvent( "done", [ _this._value, error ] );
+                        _this.getEvent( "resolved" ).stopPropagation();
+                    }
+                };
+
+
+                /**
+                 * @method then 等待延迟操作完成，并调用传入的回调函数
+                 * @param { Function } okcallback
+                 * @param { Function } errcallback 
+                 */
+                function then( success, error ){
+                    switch( this._state ){
+                        case DSTATE_UNFULFILLED:
+                            this.addOnceEventListener( "resolved", success );
+                            error && this.addOnceEventListener( "rejected", error );
+                        break;
+                        case DSTATE_FULFILLED:
+                            success.call( this, this._value, this.__COX_DEFERRED_ERROR__ );
+                        break;
+                        case DSTATE_ERROR:
+                        case DSTATE_REJECTED:
+                            error && error.call( this, this._value, this._error );
+                        break;
+                    }
+                };
+                Public.then = _XFunction( Function, then );
+                Public.then.define( Function, Function, then );
+
+                /**
+                 * @method done 延迟操作完成时（不管是被接受还是被拒绝)
+                 * @param { Function } callback
+                 */
+                Public.done = _XFunction(
+                    Function, function( callback ){
+                        if( this._state === DSTATE_UNFULFILLED ){
+                            this.addOnceEventListener( "done", callback );
+                        }else{
+                            callback.call( this, this._value, this._error );
+                        }
+                    }
+                );
+
+                /**
+                 * @method resolved 延迟操作被接受（操作完成）
+                 * @param { Object } value
+                 */
+                Public.resolved = function( value ){
+                    var _this = this;
+                    if( this._state !== DSTATE_UNFULFILLED ){
+                        throw new Error( "非法操作" );
+                    }
+
+                    this._state = DSTATE_FULFILLED;
+                    this._value = value;
+
+                    this.fireEvent( "stateChange", [ DSTATE_FULFILLED ] );
+                    this.fireEvent( 
+                        "resolved", 
+                        [ 
+                            value, 
+                            this.__COX_DEFERRED_ERROR__,
+                            function end(){
+                                _this.getEvent( "resolved" ).stopPropagation()
+                            }
+                        ]
+                    );
+                    
+                    !this._error && this.fireEvent( "done", [ value ] );
+                };
+
+                /**
+                 * @method rejected 延迟操作被拒绝（操作失败）
+                 * @param { Object } value
+                 */
+                Public.rejected = function( value ){
+                    if( this._state !== DSTATE_UNFULFILLED ){
+                        throw new Error( "非法操作" );
+                    }
+
+                    this._state = DSTATE_REJECTED;
+                    this._value = value;
+
+                    this.fireEvent( "stateChange", [ DSTATE_REJECTED ] );
+                    this.fireEvent( "rejected", [ value ] );
+                    this.fireEvent( "done", [ value ] );
+                };
+
+                /**
+                 * @method getValue
+                 * @return { Object }
+                 */
+                Public.getValue = function(){
+                    return this._value;
+                };
+
+                /**
+                 * @method isDone
+                 * @return { Boolean }
+                 */
+                Public.isDone = function(){
+                    return this._state !== DSTATE_UNFULFILLED;
+                };
+
+                /**
+                 * @method isResolved 检测操作是否被接受
+                 * @return { Boolean }
+                 */
+                Public.isResolved = function(){
+                    return this._state === DSTATE_FULFILLED;
+                };
+
+                /**
+                 * @method isRejected 检测操作是否被拒绝
+                 * @return { Boolean }
+                 */
+                Public.isRejected = function(){
+                    return this._state === DSTATE_REJECTED;
+                };
+
+            } );
+            
+            tools_unit.append(
+                new _UTest( "Deferred", function( assert ){
+                    var 
+                        d1 = new _Deferred(),
+                        t  = []
+                    ;
+                    assert( d1 instanceof _Deferred, "检测是否能正确执行-1" );
+                    assert( d1 instanceof _EventSource, "检测是否能正确执行-2" );
+                    d1.then( function( v ){
+                        t.push( 1 );
+                    } );
+                    
+                    d1.then( function( v ){
+                        t.push( 2 );
+                    } );
+                    d1.done( function( v ){
+                        t.push( 3 );
+                    } );
+                    d1.resolved( 10 );
+                    d1.then( function( v ){
+                        t.push( 4 );
+                    } );
+                    d1.done( function( v ){
+                        t.push( 5 );
+                    } );
+                    assert( t.join("") === "12345", "检测是否能正确执行-3" );
+
+                    t.length = 0;
+                    d1 = new _Deferred();
+                    d1.then( function( v ){
+                        t.push( 1 );
+                    } );
+                    d1.then( function( v, error, end ){
+                        t.push( 2 );
+                        end();
+                    } );
+                    d1.then( function( v ){
+                        t.push( 3 );
+                    } );
+
+                    d1.then( function( v ){
+                        t.push( 4 );
+                    } );
+                    d1.done( function( v ){
+                        t.push( 5 );
+                    } );
+                    d1.resolved( 10 );
+                    assert( t.join("") === "125", "检测是否能正确执行-4" );
+                    assert( d1.isDone() === true, "检测是否能正确执行-5" );
+                    assert( d1.getValue() === 10, "检测是否能正确执行-6" );
+                    assert( d1.isResolved() === true, "检测是否能正确执行-7" );
+                    assert( d1.isRejected() === false, "检测是否能正确执行-8" );
+
+                    d1 = new _Deferred();
+                    t = 5;
+                    d1.then(
+                        function(){}, function(){ t--; }
+                    );
+                    d1.then(
+                        function(){}, function(){ t-= 2; }
+                    );
+                    d1.then(
+                        function(){}, function(){ t-= 2; }
+                    );
+                    d1.done( function( v ){
+                        t++;
+                    } );
+
+                    d1.rejected( 1 );
+                    assert( t === 1, "检测是否能正确执行-9" );
+
+                    d1 = new _Deferred();
+                    t  = 0;
+                    d1.then(
+                        function( v, error, end ){
+                            error( "error" );
+                        }
+                    );
+                    d1.then(
+                        function( v, error, end ){
+                            t = 10;
+                        },
+                        function( v, error ){
+                            if( error ){
+                                t += 5;
+                            }
+                        }
+                    );
+                    d1.then(
+                        function(){
+                            t += 5;
+                        },
+                        function( v ){
+                            t -= v;
+                        }
+                    );
+                    d1.done( function( v ){
+                        t += v;
+                    } );
+                    d1.resolved( 10 );
+                    assert( t === 5, "检测是否能正确执行-10" );
+                } )
+            );
+            //tools_unit.subUnit( "Deferred" ).test();
+
+            /**
+             * Class: DeferredList 延迟操作组管理类
+             * @param { Params( Deferred ) } deferredlist
+             */
+            _Class( "DeferredList", _Entity, _Extends( _Deferred ) , null, function( Static, Public ){
+                _DeferredList = this;
+                function init( deferredlist ){
+                    var 
+                        _this        = this,
+                        deferredlist = deferredlist.slice()
+                    ;
+
+                    function deferred_done( ){
+                        deferredlist.splice( _XList.indexOf( this ), 1 );
+                        if( this.isResolved() ){
+                            _this._resolved_list.push( this );
+                        }else{
+                            _this._rejected_list.push( this );
+                        }
+
+                        if( deferredlist.length === 0 ){
+                            _this.getValue();
+                            if( _this._rejected_list.length === 0 ){
+                                _this._state = DSTATE_FULFILLED;
+                                _this.fireEvent( "stateChange", [ DSTATE_FULFILLED ] );
+                                _this.fireEvent( 
+                                    "resolved", 
+                                    [ 
+                                        _this._value, 
+                                        _this.__COX_DEFERRED_ERROR__,
+                                        function end(){
+                                            _this.getEvent( "resolved" ).stopPropagation();
+                                        }
+                                    ] 
+                                );
+                                !_this._error && _this.fireEvent( "done", [ _this.value ] );
+                            }else{
+                                _this._state = DSTATE_REJECTED;
+                                _this.fireEvent( "stateChange", [ DSTATE_REJECTED ] );
+                                _this.fireEvent( "rejected", [ _this._value ] );
+                                _this.fireEvent( "done", [ _this._value ] );
+                            }
+                        }
+                    }
+
+                    if( deferredlist.length === 0 ){
+                        throw new Error(
+                            "DeferredList类构造器参数列表中至少需要一个参数."
+                        );                    
+                    }
+
+                    this.Super( "constructor" );
+                    this._deferred_list = deferredlist.slice();
+                    this._resolved_list = [];
+                    this._rejected_list = [];
+
+                    _XList.forEach( this._deferred_list, function( deferred, index ){
+                        deferred.done( deferred_done );
+                        //deferred.addEventListener( "stateChange", deferred_done );
+                    } );
+                }
+
+                Public.constructor = _XFunction( _Params( _Deferred ), init );
+                Public.constructor.define( Array, init );
+
+                /**
+                 * resolved 延迟操作被接受（操作完成）
+                 * @param { Object } value
+                 */
+                Public.resolved = function( value ){
+                    var 
+                        _this     = this,
+                        deferreds = this._deferred_list
+                    ;
+                    if( this._state !== DSTATE_UNFULFILLED ){
+                        throw new Error(
+                            "DeferredList类实例的resolved方法，只能在DeferredList 类实例的状态在未完成时才能被调用."
+                        );
+                    }
+                    for( var i = 0, l = deferreds.length; i < l; i++ ){
+                        var deferred = deferreds[i];
+                        if( !deferred.isDone() ){
+                            deferred.resolved( value );
+                        }
+                    }
+                };
+
+                /**
+                 * rejected 延迟操作被拒绝（操作失败）
+                 * @param { Object } value
+                 */
+                Public.rejected = function( value ){
+                    var deferreds = this._deferred_list;
+                    if( this._state !== DSTATE_UNFULFILLED ){
+                        throw new Error(
+                            "DeferredList类实例的rejected方法，只能在DeferredList 类实例的状态在未完成时才能被调用."
+                        );
+                    }
+                    for( var i = 0, l = deferreds.length; i < l; i++ ){
+                        var deferred = deferreds[i];
+                        if( !deferred.isDone() ){
+                            deferred.rejected( value );
+                        }
+                    }
+                };
+
+                /**
+                 * @method getValue 获取延迟操作列表的所有结果
+                 * @return { Array }
+                 */
+                Public.getValue = function(){
+                    if( this.isDone() ){
+                        return this._value = this._value 
+                            || _XList.map( this._deferred_list, function( deferred, index ){
+                                return deferred.getValue();
+                            } );
+                    }
+                    return null;
+                };
+
+                /**
+                 * @method getDeferredList 返回包含的延迟操作列表
+                 * @return { Array }
+                 */
+                Public.getDeferredList = function(){
+                    return this._deferred_list;
+                };
+
+            } );
+            
+            tools_unit.append(
+                new _UTest( "DeferredList", function( assert ){
+                    var 
+                        d1 = new _Deferred(),
+                        d2 = new _Deferred(),
+                        d3 = new _Deferred(),
+                        ds = new _DeferredList( d1, d2, d3 ),
+                        t  = 0
+                    ;
+
+                    d1.then( function(){ t++; }, function(){ t-- } );
+                    d2.then( function(){ t+=2; }, function(){ t-=2 } );
+                    d3.then( function(){ t+=3; }, function(){ t-=3 } );
+                    ds.done( function(){
+                        t += 10;
+                    } );
+                    ds.resolved(10);
+                    assert( t === 16, "检测是否能正确执行-1" );
+                    assert( ds.getValue().join("") === "101010", "检测是否能正确执行-2" );
+                    
+                    d1 = new _Deferred();
+                    d2 = new _Deferred();
+                    d3 = new _Deferred();
+                    t  = 0;
+                    d1.then( function(){ t++; }, function(){ t-- } );
+                    d2.then( function(){ t+=2; }, function(){ t-=2 } );
+                    d3.then( function(){ t+=3; }, function(){ t-=3 } );
+                    ds.done( function(){
+                        t += 10;
+                    } );
+                    ds = new _DeferredList( d1, d2, d3 );
+                    ds.rejected( 10 );
+                    assert( t === 4, "检测是否能正确执行-3" );
+
+                    d1 = new _Deferred();
+                    d2 = new _Deferred();
+                    d3 = new _Deferred();
+                    t  = 0;
+                    d1.then( function(){ t++; }, function(){ t-- } );
+                    d2.then( function( v, error ){ error("err") }, function(){ t-=2 } );
+                    d3.then( function(){ t+=3; }, function(){ t-=3 } );
+                    ds.done( function(){
+                        t += 10;
+                    } );
+                    ds = new _DeferredList( d1, d2, d3 );
+                    ds.resolved( 10 );
+                    assert( t === 12, "检测是否能正确执行-4" );
+                    d1 = new _Deferred();
+                    d2 = new _Deferred();
+                    d3 = new _Deferred();
+                    t  = 0;
+                    d1.then( function( v ){ t += v; }, function(){ } );
+                    d2.then( function( v ){ t += v; }, function(){ } );
+                    d3.then( function( v ){ t += v; }, function(){ } );
+                    ds = new _DeferredList( d1, d2, d3 );
+                    ds.then( function(){
+                        t++;
+                    } );
+                    ds.then( function( v, error, end ){
+                        end();
+                    } );
+                    ds.then( function( v ){
+                        t = 0;
+                    } );
+                    ds.done( function(){
+                        t++;
+                    } );
+                    d1.resolved( 1 );
+                    d2.resolved( 2 );
+                    d3.resolved( 3 );
+                    assert( t === 8, "检测是否能正确执行-5" );
+                    d1 = new _Deferred();
+                    d2 = new _Deferred();
+                    d3 = new _Deferred();
+                    t  = 0;
+                    d1.then( function( v ){ t += v; }, function(){ } );
+                    d2.then( function( v ){ t += v; }, function(){ } );
+                    d3.then( function( v ){ t += v; }, function(){ } );
+                    ds = new _DeferredList( d1, d2, d3 );
+                    ds.then( 
+                        function(){t++;},
+                        function(){t--;}
+                    );
+                    ds.then( function( v, error, end ){
+                        end();
+                    } );
+                    ds.then( 
+                        function(){ t = 0; },
+                        function(){ t-- }
+                    );
+                    ds.done( function(){
+                        t++;
+                    } );
+                    d1.resolved( 1 );
+                    d2.rejected( 2 );
+                    d3.resolved( 3 );
+                    assert( t === 3, "检测是否能正确执行-6" );
+                    d1 = new _Deferred();
+                    d2 = new _Deferred();
+                    d3 = new _Deferred();
+                    t  = 0;
+                    d1.then( function( v ){ t += v; }, function(){ } );
+                    d2.then( function( v ){ t += v; }, function(){ } );
+                    d3.then( function( v ){ t += v; }, function(){ } );
+                    ds = new _DeferredList( d1, d2, d3 );
+                    ds.then( 
+                        function(){ t++; },
+                        function(){ t--; }
+                    );
+                    ds.then( function( v, error, end ){
+                        error("error")
+                    } );
+                    ds.then( 
+                        function(){ t = 0; },
+                        function(){ t-- }
+                    );
+                    ds.done( function(){
+                        t++;
+                    } );
+                    d1.resolved( 1 );
+                    d2.resolved( 2 );
+                    d3.resolved( 3 );
+                    assert( t === 6, "检测是否能正确执行-6" );
+                } )
+            );
+
+            //tools_unit.subUnit( "DeferredList" ).test();
+
+            gunit.append( tools_unit );
+            tools_unit.test();
+        }();
+
+
+        //gunit.test( true );
 }();
+
 
 /*
 _KeyWord.TOOL                 = "Tool";
