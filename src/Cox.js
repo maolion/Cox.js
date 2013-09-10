@@ -1,5 +1,5 @@
 /**
- * #${project}
+ * #Cox.js
  * ----------------------------------------------------------------------------
  * Cox.js 它是在标准原生 JavaScript 基础之上对 JavaScript 使用的扩展
  *  
@@ -30,10 +30,9 @@
  *
  * ----------------------------------------------------------------------------
  *
- * -   Date ${MDATE}
- * -   Version ${version} 
- * -   Author ${author}
- *
+ * -   Date 2013-9-10
+ * -   Version 1.0
+ * -   Author 江宜玮
  */
 
 ;void function(){
@@ -57,7 +56,6 @@
         newObject             = null,
         gunit                 = null,
         //主要功能模块（对外接口）
-        _UTest                = null,
         _KeyWord              = null,
         _XObject              = null,
         _XFunction            = null,
@@ -75,9 +73,7 @@
         _Params               = null,
         _ParamTypeTable       = null,
         _Implements           = null,
-        _XImplements          = null,
         _Extends              = null,
-        _XExtends             = null,
         _Interface            = null,
         _ClassMode            = null, 
         _Entity               = null,
@@ -96,404 +92,6 @@
         _Use                  = null,
         _Modules              = null
     ;
-
-    /*
-    由于Cox.js(debug版，在非debug版的源码文件中 _RELIABLE_CONSOLE_ 代
-    码块的代码将会被剔除)需要依赖 环境提供的 console"控制台"输出接口 输出代
-    码调试测试信息。所以为了源代码功能块能在某些环境未提供console"控制台"输
-    出接口的情况下正常运作，这里给予简单的容错处理。
-    */
-    void function _RELIABLE_CONSOLE_(){
-        var 
-            console = GLOBAL.console || {
-                info  : EMPTY_FUNCTION,
-                log   : EMPTY_FUNCTION,
-                warn  : EMPTY_FUNCTION,
-                error : EMPTY_FUNCTION
-            }
-        ;
-
-        if( typeof console.group !== "function" ){
-            console.group = function(){
-                try{
-                    console.log.apply( console, arguments );
-                }catch( e ){
-                    console.log( SLICE.call(arguments) );
-                }
-            };
-            console.groupEnd = EMPTY_FUNCTION;
-        }
-
-        console._warn = function( message, errorType ){
-            try{
-                throw new ( errorType || Error )( message );
-            }catch( e ){
-                console.warn( e.stack || e.message || e );
-            }
-        };
-
-        console._error = function( message, errorType ){
-            try{
-                throw new ( errorType || Error )( message );
-            }catch( e ){
-                console.error( e.stack || e.message || e );
-            }
-        };
-
-        if( isNode ){
-            console.error = console.log;
-            console.warn  = console.log;
-        }
-
-        GLOBAL.console = console;
-    }(); 
-
-    /*
-    实现 用于单元测试的类(使用 _UTest 标识, 只有在debug版的源码中有提供 )
-    每一个 _UTest类实例对象 都被看作是一个要被测试的单元，一个测试单元操作
-    的数据就是可执行的代码段（函数），代码段由使用者提供，它们的操作主要是
-    确保某一些已被实现的功能模块能够按所需求的一样正确执行，每一个测试单元
-    （即，_UTest类实例对象）都可以拥有子测试单元（这里，子测试单元被看作是
-    包含它的测试单元中的代码段）。理论上 某一个测试单元的测试操作未完成时(
-    严格意义上来说是，未得到的完整的测试结果的情况下)， 那 么下一个测试单元
-    的测试操作必须等待前一测试单元的测试操作完成后在执行。
-    */
-    void function _IMPLEMENT_UTEST_(){
-
-        var 
-            test_queue     = [],
-            busy           = false,
-            unit_info      = null,
-            result_info    = null
-        ;
-
-        //用于创建测试结果信息对象
-        function TestResultInfo(){
-            this.passCount         = 0;
-            this.failCount         = 0;
-            this.startTime         = new Date();
-        }
-
-        //用于创建测试单元相关信息对象
-        function TestUnitInfo( unit, test_args ){
-            test_args              = test_args || [];
-            this.unit              = unit || null;
-            this.test_all_always   = !!test_args[0];
-            this.only_fail_message = !!test_args[1];
-        };
-
-        /**
-         * assert 保证某一结果的正确性
-         * @param { Boolean } result 
-         * @param { String } message 对测试结果的描述（或被称为标签）
-         */
-        function assert( result, message ){
-            message = message || ( "" + result );
-            if( result ){
-                result_info.passCount++;
-                if( !unit_info.only_fail_message ){
-                    console.log( "[√] " + message );                    
-                }
-            }else if( unit_info.test_all_always ){
-                result_info.failCount++;
-                console._error( "Assertion failed: " + message );
-            }else{
-                test_queue.length       = 0;
-                busy                    = false;
-                unit_info.unit._testing = false;
-                unit_info               = null;
-                throw new Error( "Assertion failed: " + message );
-            }
-        }
-
-        /**
-         * defferred 阻塞测试队列（或，通知下一测试单元需要等待当前测试单元测试完
-         * 成后在执行测试操作)
-         */
-        function deferred(){
-            busy = true;
-            //console.log( "等待测试结果..." );
-        }
-
-        /**
-         * 执行下一测试单元的测试操作。
-         */
-        function next(){
-            var 
-                unit      = test_queue.shift() || [],
-                test_args = unit[1] || [],
-                unit      = unit[0]
-            ;
-            
-            busy = false;
-            if( unit_info && unit_info.unit ){
-                unit_info.unit._testing = false;
-            }
-
-            if( !unit ){
-                return;
-            }else if( unit === console.groupEnd ){
-                unit_info = null;
-                console.groupEnd();
-
-                //如果测试队列中已经没有其他任务测试单元的情况，将输出相关的测试
-                //结果信息
-                if( test_queue.length === 0 ){
-                    var
-                        pass_count = result_info.passCount,
-                        fail_count = result_info.failCount,
-                        message    = "",
-                        output     = "log"
-                    ;
-
-
-                    if( pass_count + fail_count ){
-                        if( fail_count === 0 ){
-                            message = "All passed.";
-                        }else{
-                            output  = "warn";
-                            message = fail_count + " faileds.";
-                        }
-
-                    }
-
-                    console[ output ]( 
-                        message,
-                        "Finished in " + ( ( new Date - result_info.startTime ) / 1000 ) + "s."
-                    );
-
-                    result_info = null;
-                }
-                
-                next();
-                return;
-            }
-            if( !result_info ){
-                result_info = new TestResultInfo;
-                console.log( result_info );
-            }
-
-            unit.test.apply( unit, test_args );
-            return unit;
-        };
-
-        /**
-         * _UTest 类用于创建测试单元
-         * 
-         * @constructor UTest
-         * @param { String } label 测试单元标识符（标签）
-         * @param { Function } code 代码段
-         *
-         * @property { String } label 测试单元标识符（标签）
-         * @property { Function } code 代码端
-         * @property { Boolean } disabled 禁止测试单元中的添加，删除和测试操作
-         * @example
-         *  new _UTest();
-         *  new _UTest( "Hello" );
-         *  new _UTest( "HelloWorld", function( assert, deferred, next ){
-         *      ....
-         *  } );
-         */
-        _UTest = function UTest( label, code ){
-            if( code ){
-                this.label = label || "";
-                this.code  = code;
-            }else{
-                if( typeof label === "function"  ){
-                    this.label = "";
-                    this.code  = label;
-                }else{
-                    this.label = label;
-                    this.code  = EMPTY_FUNCTION;
-                }
-            }
-
-            this.disabled  = false;
-            //使用有序列表做为子测试单元的存储器的目的是保证测试结果的输出顺序
-            this._subunits = []; 
-            this._testing  = false;
-        };
-
-        /**
-         * @method append 为测试单元添加一个或多个子测试单元
-         * @param { UTest [] } units 
-         * @example
-         *  var tests = new _UTest();
-         *  tests.append( 
-         *      new _UTest( "test1", function( assert ){ assert( 1, "test1" ); } )[,
-         *      new _UTest( "test2", function( assert ){ assert( 2, "test2" ); } ),
-         *      ...]
-         *  );
-         */
-        _UTest.prototype.append = function( units ){
-            var units = SLICE.call( arguments );
-
-            if( this.disabled ){
-                console._warn( 
-                    "无法对一个失效(disabled属性为true)的测试单元进行修改操作" 
-                );
-                return null;
-            }
-
-            for( var i = 0, l = units.length; i < l; i++  ){
-                var unit = units[ i ];
-                if( !( unit instanceof _UTest ) ){
-                    throw new TypeError( "测试单元类型错误" );
-                }
-
-                if( unit === this ){
-                    continue;
-                }
-
-                this._subunits.push( unit );
-            }
-
-        };
-
-
-        /**
-         * @method remove 从测试单元中删除一个或多个子测试单元
-         * @param { String [] } labels 用于匹配要删除测试单元的标签
-         * @return { UTest [] } 返回被删除子测试单元清单
-         * @example
-         *  var tests = new _UTest();
-         *  tests.append( 
-         *      new _UTest( "test1", function( assert ){ assert( 1, "test1" ); } ),
-         *      new _UTest( "test2", function( assert ){ assert( 2, "test2" ); } )
-         *  ); 
-         *  tests.remove( "test1"[, "test2", ... ] );
-         */
-        _UTest.prototype.remove = function( labels ){
-            var 
-                labels = arguments,
-                units  = this._subunits,
-                dels   = []
-            ;
-
-            if( this.disabled ){
-                console._warn( 
-                    "无法对一个失效(disabled属性为true)的测试单元进行修改操作" 
-                );
-                return null;
-            }
-
-            for( var i = 0, l = labels.length, l2 = units.length - 1; i < l; i++ ){
-                var label = labels[ i ];
-                for( var i2 = l2; i2 >= 0; i-- ){
-                    var unit = units[ i2 ];
-                    if( unit.label !== label ){
-                        continue;
-                    }
-                    if( unit._testing ){
-                        console._warn(
-                            "子测试单元由于状态处在测试中，所以无法将其删除。"
-                        );
-                        continue;
-                    }
-
-                    dels.push( unit );
-                    units.splice( i2, 1 );
-                }
-            }
-
-            return dels;
-        };
-
-        /**
-         * @method subUnit 根据给定的标签从子测试单元列表中查找匹配的测试单元
-         * 项，并将其返回
-         * @param { String } label 用于匹配子测试单元的标签
-         * @return { UTest }
-         * @example
-         *  var tests = new _UTest();
-         *  tests.append( 
-         *      new _UTest( "test1", function( assert ){ assert( 1, "test1" ); } ),
-         *      new _UTest( "test2", function( assert ){ assert( 2, "test2" ); } )
-         *  );
-         *  var test1 = tests.subUnit( "test1" );
-         */
-        _UTest.prototype.subUnit = function( label ){
-            var 
-                unit  = null,
-                units = this._subunits
-            ;
-
-            for( var i = 0, l = units.length; i < l; i++  ){
-                unit = units[ i ];
-                if( unit.label === label ){
-                    break;
-                }   
-                unit = null;
-            }
-            
-            return unit;
-        };
-
-        /**
-         * @method test 为测试单元执行测试操作
-         * 它同时会间接的执行其所有子测试单元的测试操作
-         * @param  { Boolean } test_all_alaways 存在有失败的测试结果的情况下，是
-         * 是否继续执行余下的测试操作
-         * @param { Boolean } only_fail_message 是否只输出失败的测试结果信息。
-         * @example
-         *  var tests = new _UTest();
-         *  var test1 = new _UTest( "test1", function( assert ){ assert( 1, "test1" ); } );
-         *  tests.append( 
-         *      test1,
-         *      new _UTest( "test2", function( assert ){ assert( 2, "test2" ); } )
-         *  );
-         *  tests.test( );
-         *  tests.test( true );
-         *  tests.test( true, true );
-         *  test1.test();
-         *  tests.subUnit( "test2" ).test( true );
-         */
-        _UTest.prototype.test = function( test_all_always, only_fail_message ){
-            if( this.disabled ){
-                console._warn( 
-                    "无法对一个失效(disabled属性为true)的测试单元进行测试操作" 
-                );
-                return;
-            }else if( this._testing ){
-                return;
-            }
-
-            if( busy ){
-                //每一个测试单元的测试操作都需要等待前一测试单元的测试操作执行
-                //完成时才会被执行
-                test_queue.push( [ this, arguments ] );                
-            }else{
-
-                var units = this._subunits;
-
-
-                if( !result_info ){
-                    result_info = new TestResultInfo;
-                }
-                unit_info = new TestUnitInfo( this, arguments );
-
-                console.group( "test " + ( this.label || "unknow" ) + " unit." );
-
-                test_queue.unshift( [ console.groupEnd ] );
-                //如果存在子测试单元，那么子测试单元将取代下一测试单元的位置。
-                for( var i = units.length - 1; i >= 0; i-- ){
-                    test_queue.unshift( [ units[ i ], arguments ] );
-                }
-
-                this._testing = true;
-
-                this.code( assert, deferred, next );
-
-                if( !busy ){
-                    next();
-                }
-
-            }
-        };
-    }(); 
-
-
-    gunit = new _UTest( "Global" );
     
     //创建一个新对象，并将指定对象作用于新对象原型链上   
     newObject = Object.create || (function(){
@@ -504,27 +102,6 @@
         }
     }());
 
-    //为newObject功能模块添加单元测试
-    gunit.append( new _UTest( "newObject", function( assert ){
-        var 
-            proto = null,
-            obj   = null
-        ;
-
-        proto = {
-            p1 : "Hello",
-            p2 : "World"
-        };
-
-        obj    = newObject( proto );
-        obj.m1 = function(){
-            return this.p1 + "," + this.p2;
-        };
-
-        assert( obj.m1() === "Hello,World", "检测对象原型链" );
-
-    } ) );
-    //gunit.subUnit( "newObject" ).test();
     
     //创建对象工厂类
     function ObjectFactory( factory, extend ){
@@ -553,40 +130,6 @@
 
         return factory_wrap;
     }
-
-    //为ObjectFactory功能模块添加单元测试
-    gunit.append( new _UTest( "ObjectFactory", function( assert ){
-        var 
-            A   = null,
-            obj = null,
-            f   = null
-        ;
-        f = function( a, b ){
-            this.p1 = 1 + ~~a;
-            this.p2 = -1 + ~~b;
-        };
-        A = ObjectFactory( f );
-
-        A.prototype.m1 = function(){
-            return this.p1 + this.p2;
-        };
-
-        obj = A();
-        
-        assert( obj instanceof A , "检测对象的构造器" );
-        assert( obj.p1 === 1 , "检测对象成员" );
-        assert( obj.m1() === 0, "检测对象原型链" );
-        assert( A.toString() === f.toString(), "检测是否能正确执行-1" );
-        assert( A(1).m1() + A( 1, 2 ).m1() === 4, "检测是否能正确执行-2" );
-        A = ObjectFactory( function(){ this.p2 = 1 }, obj );
-
-        assert( A().p1 === 1, "继承特性执行状态测试" );
-        assert( A().m1() === 2, "继承特性执行状态测试" );
-        A.prototype.p2++;
-        assert( obj.p2 === -1, "继承特性执行状态测试" );
-        assert( A().constructor === A, "检测是否能正确执行-3" );
-    } ) );
-    //gunit.subUnit( "ObjectFactory" ).test(false);
 
     /*
     实现 用于标记某功能模块的标识符为Cox的关键字（对外提供的核心接口标识符）
@@ -701,60 +244,6 @@
 
             return true;
         };
-
-        gunit.append( new _UTest( "KeyWord", function( assert ){
-            var 
-                temp  = {
-                    groups   : groups,
-                    keywords : keywords
-                },
-                keyword1 = null,
-                keyword2 = null
-            ;
-
-            //防止扰乱原有数据s
-            groups = {
-                Tool              : {},
-                DataType          : {},
-                ParamTypeModifier : {},
-                Subsidiary        : {}
-            };
-
-            keywords = {};
-
-            keyword1 = _KeyWord( "sun", null, function( a, b ){
-                return a + b;
-            } );
-
-            assert( typeof keyword1 === "function", "检测调用 _KeyWord 的执行结果" );
-            assert( _KeyWord.Tool( "A", function(){} ), "检测快捷接口 _KeyWord.Tool" );
-            assert( _KeyWord.DataType( "B", function(){} ), "检测快捷接口 _KeyWord.DataType" );
-            assert( _KeyWord.ParamTypeModifier( "C", function(){} ), "检测快捷接口 _KeyWord.ParamTypeModifier" );
-            assert( _KeyWord.Subsidiary( "D", function(){} ), "检测快捷接口 _KeyWord.Subsidiary" );
-            assert( _KeyWord.__instancelike__( keyword1 ), "检测关键字是否被成功标记" );
-            assert( keyword1( 1, 2 ) === 3, "检测关键字是否能被正确使用" );
-            assert(
-                _KeyWord.__instancelike__( keyword1, _KeyWord.TOOL ),
-                "检测关键字是否被分配到默认分组"
-            );
-            assert(
-                _KeyWord.__instancelike__(
-                    _KeyWord( "X", _KeyWord.SUBSIDIARY, EMPTY_FUNCTION ), 
-                    _KeyWord.SUBSIDIARY
-                ),
-                "为关键字进行指定分组"
-            );
-            keyword2 = _KeyWord( "sun", null, function( a, b ){
-                return keyword1( a, b );
-            } );
-            assert(
-                _KeyWord.__instancelike__( keyword1, "Tool" ) && _KeyWord.__instancelike__( keyword2, "Tool" ),
-                "检测是否能为同一个关键字添加多个处理程序" 
-            );
-
-            groups   = temp.groups;
-            keywords = temp.keywords;
-        } ) );
     
     }();
     //gunit.subUnit( "KeyWord" ).test();
@@ -764,7 +253,6 @@
      */
     void function __IMPLEMENT_UTIL__(){
         var 
-            util_unit             = new _UTest( "Util" ),
             CANNOT_ENUM_PROPERTYS = -[1,] && [] || [
                 "toString",
                 "toLocalString",
@@ -807,17 +295,6 @@
             return obj && obj.constructor === Object;
         };
 
-        util_unit.append(
-            new _UTest( "PlainObject", function( assert ){
-                var n = 0;
-                function X(){};
-                assert( _PlainObject, "PlainObject ok." );
-                n = ~~_PlainObject.__instancelike__( {} );
-                n += ~~!_PlainObject.__instancelike__( new X );
-                assert( n === 2, "检测 PlainObject.__instancelike__ 是否能被正确执行" );
-            } )
-        );
-
         _Type = _KeyWord( "Type", _KeyWord.DATATYPE, function Type(){
             return Function.apply( null, arguments );
         } );
@@ -828,22 +305,6 @@
                 typeof type.__instancelike__ === "function" 
             );
         }
-
-        util_unit.append(
-            new _UTest( "Type", function( assert ){
-                assert( _Type() instanceof Function, "测试是否能正确执行-1" );
-                assert( _Type( 'a', 'return a' )(0) === 0, "测试是否能正确执行-2" );
-                var oType = {
-                    __instancelike__ : function(){
-                        return true;
-                    }
-                }
-                assert( _Type.__instancelike__( String ) === true, "_Type.__instancelike__( String ) === true" );
-                assert( _Type.__instancelike__( oType ) === true, "_Type.__instancelike__( oType ) === true" );
-                assert( _Type.__instancelike__( {} ) === false, "_Type.__instancelike__( {} ) === false" );
-                assert( _Type.__instancelike__( null ) === false, "_Type.__instancelike__( null ) === false" );
-            } )
-        );
 
         /**
          * Null 空数据类型
@@ -861,17 +322,6 @@
             return obj === null || obj === undefined;
         };
 
-        util_unit.append(
-            new _UTest( "NullObject", function( assert ){
-                var n = 0;
-                function X(){};
-                assert( _Null, "NullObject ok." );
-                n = ~~_Null.__instancelike__( null );
-                n += ~~_Null.__instancelike__( undefined );
-                n += ~~!_Null.__instancelike__( false );
-                assert( n === 3, "检测 Null.__instancelike__ 是否能被正确执行" );
-            } )
-        );
         /**
          * XObject 提供一些用于操作对象数据的一些静态方法集，通过 XObject构
          * 造出的对象与普通对象无任何差别
@@ -1008,141 +458,6 @@
             } );
             return keys;
         };
-
-        /*
-        /**
-         * XObject.__instancelike__ 判断某一对象是否能被“看作”为XObject的实
-         * 例（除null和undefined外所有类实例都可被看作是 XObject 的实例 )
-         * @param { Object } obj
-         * @return { Boolean }
-        * /
-        _XObject.__instancelike__ = function( obj ){
-            if( obj === null || obj === undefined ){
-                return false;
-            }
-            if( obj instanceof _XObject ){
-
-            }
-            return noextend ? obj.constructor === Object  : true;
-        };
-        */
-
-        //_XObject.prototype
-
-        //为 XObject及其提供的方法 添加单元测试
-        util_unit.append( 
-            new _UTest( "XObject", function( assert ){
-                assert( new _XObject instanceof Object, "new _XObject instanceof Object" );
-                assert( 
-                    _KeyWord.__instancelike__( _XObject, _KeyWord.DATATYPE ),
-                    "检测XObject是否为关键字"
-                );
-
-                /*assert( _XObject.__instancelike__( {} ) === true , "_XObject.__instancelike__( {} ) === true" );
-                assert( _XObject.__instancelike__( [] ) === true , "_XObject.__instancelike__( [] ) === true" );
-                assert( _XObject.__instancelike__( "X" ) === true , '_XObject.__instancelike__( "X" ) === true' );
-                assert( _XObject.__instancelike__( 1 ) === true , '_XObject.__instancelike__( 1 ) === true' );
-                assert( _XObject.__instancelike__( false ) === true , '_XObject.__instancelike__( false ) === true' );
-                assert( _XObject.__instancelike__( null ) === false , '_XObject.__instancelike__( null ) === false' );
-                assert( _XObject.__instancelike__( undefined ) === false , '_XObject.__instancelike__( undefined ) === false' );
-                */
-            } ) 
-        );
-
-        util_unit.subUnit( "XObject" ).append( 
-            new _UTest( "forEach", function( assert ){
-                var 
-                    obj  = null,
-                    test = null
-                ;
-
-                obj = { toString : "123" };
-
-                _XObject.forEach( obj, true, function( v ){
-                    test = v;
-                } );
-                assert( test === "123", "检测是否能枚举遍历对象成员列表" );
-
-                obj = function(){
-                    this.toString = 222;
-                }
-                obj.prototype.valueOf = 111;
-
-                test = 0;
-                _XObject.forEach( new obj, false, function( v, key ){
-                    test += v;
-                } );
-                assert( test === 333, "检测是否能枚举对象原型链中的成员列表" );
-            } ) 
-        );
-
-        util_unit.subUnit( "XObject" ).append(
-            new _UTest( "mix", function( assert ){
-                var 
-                    obj1 = null,
-                    obj2 = null,
-                    obj3 = null
-                ;
-
-                obj1 = {};
-                obj2 = {
-                    p1 : 1,
-                    p2 : 2
-                };
-
-                obj3 = {
-                    p1 : 0
-                };
-
-                _XObject.mix( obj1, obj2 );
-                assert( "p1" in obj1 && "p2" in obj1, "目标对象被混合另一对象成员拷贝" );
-
-                _XObject.mix( obj1, obj3 );
-                assert( obj1.p1 === 1, "目标对象成员不会被另一对象同一成员覆盖" );
-
-                _XObject.mix( obj1, obj3, true );
-                assert( obj1.p1 === 0, "目标对象成员会被另一对象同一成员覆盖" );
-
-                function A1(){
-                };
-                A1.prototype.p3 = 1;
-
-                _XObject.mix( obj1, new A1, false, false );
-                assert( !( "p3" in obj1 ), "无法将对象原型链上的成员混合到目标对象上" );
-
-                _XObject.mix( obj1, new A1, false, true );
-                A1.prototype.p4 = 1;
-                _XObject.mix( obj1, new A1, false );
-                assert( "p3" in obj1 && "p4" in obj1, "将对象原型链上的成员混合到目标对象上" );
-            } )
-        );
-
-        util_unit.subUnit( "XObject" ).append(
-            new _UTest( "keys", function( assert ){
-                var obj = null;
-
-                obj = {
-                    p1 : 1,
-                    p2 : 2,
-                    p3 : 3
-                };
-                assert(
-                    _XObject.keys( obj ).join("").replace( /\d/g, "" ) === "ppp",
-                    "检测枚举所得的对象键名列表是否正确"
-                );
-
-                obj = function(){
-                    this.p1 = 1;
-                };
-                obj.prototype.p2 = 2;
-                assert(
-                    _XObject.keys( new obj ).join("").replace( /\d/g, "" ) === "p",
-                    "检测枚举所得的对象成员键名列表是否不包含对象原型链对象中的成员键名"
-                );
-            } )
-        );
-        //util_unit.sub( "XObject" ).test();
-
 
         /**
          * XString 提供一些用于操作字符串数据的一些静态方法集，通过 XString构
@@ -1284,83 +599,6 @@
         _XString.__instancelike__ = function( obj ){
             return obj instanceof String || typeof obj === "string";
         };
-
-        //为 XString 及其提供的方法 添加单元测试
-        util_unit.append(
-            new _UTest( "XString", function( assert ){
-                assert( new _XString instanceof String, "new _XString instanceof String" );
-                assert(
-                    _KeyWord.__instancelike__( _XString, _KeyWord.DATATYPE ),
-                    "检测XString是否为关键字"
-                );
-                assert( _XString.__instancelike__( new String( "A" ) ) === true, '_XString.__instancelike__( new String( "A" ) ) === true' );
-                assert( _XString.__instancelike__( "A" ) === true, '_XString.__instancelike__( "A" ) === true' );
-                assert( _XString.__instancelike__(0 ) === false, '_XString.__instancelike__( 0 ) === false' );
-                                
-                                
-            } )
-        );
-
-        util_unit.subUnit( "XString" ).append(
-            new _UTest( "trim", function( assert ){
-                assert( _XString.trim( "abc" ) === "abc", 'XString.trim( "abc" ) === "abc"'  );
-                assert( _XString.trim( "  abc" ) === "abc", 'XString.trim( "  abc" ) === "abc"'  );
-                assert( _XString.trim( "abc  " ) === "abc", 'XString.trim( "abc  " ) === "abc"'  );
-                assert( _XString.trim( "  abc  " ) === "abc", 'XString.trim( "  abc  " ) === "abc"'  );
-                assert( _XString.trim( "a b c" ) === "a b c", 'XString.trim( "a b c" ) === "a b c"'  );
-                assert( _XString.trim( "  a b c  " ) === "a b c", 'XString.trim( "  a b c  " ) === "a b c"'  );
-                assert( _XString.trim( "    " ) === "", 'XString.trim( "    " ) === ""'  );
-                assert( _XString.leftTrim( "abc" ) === "abc", 'XString.leftTrim( "abc" ) === "abc"'  );
-                assert( _XString.leftTrim( "  abc" ) === "abc", 'XString.leftTrim( "  abc" ) === "abc"'  );
-                assert( _XString.rightTrim( "abc" ) === "abc", 'XString.rightTrim( "abc" ) === "abc"'  );
-                assert( _XString.rightTrim( " abc  " ) === " abc", 'XString.rightTrim( "abc  " ) === "abc"'  );
-                  
-            } )
-        );
-
-        util_unit.subUnit( "XString" ).append(
-            new _UTest( "format", function( assert ){
-                assert( _XString.format( "Hello" ) === "Hello", '_XString.format( "Hello" ) === "Hello"' );
-                assert( _XString.format( "Hello", "xxx", "xxxxx" ) === "Hello", '_XString.format( "Hello", "xxx", "xxxxx" ) === "Hello"' );
-                assert( _XString.format( "{0}", "Hello" ) === "Hello", '_XString.format( "{0}", "Hello" ) === "Hello"' );
-                assert( _XString.format( "Hello, {0}", "World" ) === "Hello, World", '_XString.format( "Hello, {0}", "World" ) === "Hello, World"' );
-                assert( _XString.format( "{0}, {1}", "Hello", "World" ) === "Hello, World", '_XString.format( "{0}, {1}", "Hello", "World" ) === "Hello, World"' );
-                assert( _XString.format( "{1}, {0}", "World", "Hello" ) === "Hello, World", '_XString.format( "{1}, {0}", "World", "Hello" ) === "Hello, World"' );
-                assert( _XString.format( "{0}{0}", "!" ) === "!!", '_XString.format( "{0}{0}", "!" ) === "!!"' );
-            } )
-        );
-
-        util_unit.subUnit( "XString" ).append(
-            new _UTest( "quote", function( assert ){
-                assert( _XString.quote( "abc" ) === '"abc"', "检测quote是否能正常工作-1" );
-                assert( _XString.quote( "abc" ) === '"abc"', "检测quote是否能正常工作-2" );
-                assert( _XString.quote( "a\nbc" ) === '"a\\nbc"', "检测quote是否能正常工作-3" );
-                 
-            } )
-        );
-
-        util_unit.subUnit( "XString" ).append(
-            new _UTest( "startsWith", function( assert ){
-                var ostr = "_XString.startsWith = function( str, search, pos ){";
-                assert( _XString.startsWith( ostr, "String" ) === false, "检测startsWith接口是否能正常工作-1" );                     
-                assert( _XString.startsWith( ostr, "_XString" ) === true, "检测startsWith接口是否能正常工作-2" );
-                assert( _XString.startsWith( ostr, "String", 2 ) === true, "检测startsWith接口定位搜索-3" );                     
-                assert( _XString.startsWith( ostr, "String", 1 ) === false, "检测startsWith接口定位搜索-4" );                     
-            } )
-        );
-
-        util_unit.subUnit( "XString" ).append(
-            new _UTest( "endsWith", function( assert ){
-                var ostr = "_XString.endsWith";
-                assert( _XString.endsWith( ostr, "Wit" ) === false, "检测endsWith接口是否能正常工作-1" );                     
-                assert( _XString.endsWith( ostr, "endsWith" ) === true, "检测endsWith接口是否能正常工作-2" );
-                assert( _XString.endsWith( ostr, "ends", ostr.length - 4 ) === true, "检测endsWith接口定位搜索-3" );                     
-                assert( _XString.endsWith( ostr, "ends", ostr.length - 3 ) === false, "检测endsWith接口定位搜索-4" );                     
-                
-            } )
-        );
-
-        //util_unit.subUnit( "XString" ).test();
 
         _XList = _KeyWord( "XList", _KeyWord.DATATYPE , function XList(){
             return Array.apply( null, arguments );
@@ -1681,205 +919,6 @@
             return obj instanceof Array;
         };
 
-        //为 XList 及其提供的方法 添加单元测试
-        util_unit.append(
-            new _UTest( "XList", function( assert ){
-                assert( new _XList instanceof Array, "new _XList instanceof Array" );
-                assert( _KeyWord.__instancelike__( _XList, _KeyWord.DATATYPE ), "检测XString是否为关键字" );
-                assert( _XList.__instancelike__( new Array( 1, 2, 3 ) ) === true, '_XList.__instancelike__( new Array( 1, 2, 3 ) ) === true' );
-                assert( _XList.__instancelike__( [ 1, 2, 3 ] ) === true, '_XList.__instancelike__( [ 1, 2, 3 ] ) === true' );
-                assert( _XList.__instancelike__( {} ) === false, '_XList.__instancelike__( {} ) === false' );
-                     
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "forEach", function( assert ){
-                var 
-                    list = [ 1, 2, 3 ],
-                    t1   = null,
-                    t2   = null,
-                    t3   = null
-                ;
-                t1 = 0;
-                t2 = "";
-                _XList.forEach( list, function( value, key, list ){
-                    t1 += value;
-                    t2 += "" + key;
-                    t3 = list;
-                } );
-                _XList.forEach( list, function( value, key, list ){
-                    t3 = this;
-                }, t3 );
-                assert( t1 === 6 && t2 === "012" && t3 == list, "检测forEach是否能正确执行" );
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "indexOf", function( assert ){
-                var 
-                    list = [ 1, 2, 3, 4, 5 ]
-                ;
-                assert( _XList.indexOf( list, 1 ) === 0, "_XList.indexOf( [" + list + "], 1 ) === 0" );
-                assert( _XList.indexOf( list, 0 ) === -1, "_XList.indexOf( [" + list + "], 0 ) === -1" );
-                assert( _XList.indexOf( list, 5 ) === 4, "_XList.indexOf( [" + list + "], 5 ) === 4" );
-            } )
-        );
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "lastIndexOf", function( assert ){
-                var 
-                    list = [ 1, 2, 3, 4, 5, 1, 2, 4, 5 ]
-                ;
-                assert( _XList.lastIndexOf( list, 1 ) === 5, "检测lastIndexOf是否正确执行-1" );
-                assert( _XList.lastIndexOf( list, 0 ) === -1, "检测lastIndexOf是否正确执行-2" );
-                assert( _XList.lastIndexOf( list, 5 ) === 8, "检测lastIndexOf是否正确执行-3" );
-            } )
-        );
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "unique", function( assert ){
-                var 
-                    o1   = {},
-                    o2   = o1,
-                    o3   = {},
-                    a1   = [],
-                    a2   = [],
-                    a3   = [ a1, a2 ],
-                    list = [ o1, o2, o3, a1, a2, a3, o1, o2, a3 ]
-
-                ;
-                list = _XList.unique( list );
-                assert( list.length === 5, "检测XList.unique是否能正确执行" );
-                assert( _XList.unique( [ 1, 2, 3, 4, 1, 2, 3, 2 ] ).toString() === "1,2,3,4", '_XList.unique( [ 1, 2, 3, 4, 1, 2, 3, 2 ] ).toString() === "1,2,3,4"' );
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "xUnique", function( assert ){
-                assert( _XList.xUnique( [ 1, 2, 1, 2, 3, 2, 1, 3, 1 ] ).toString() === "1,2,3", '_XList.xUnique( [ 1, 2, 1, 2, 3, 2, 1, 3, 1 ] ).toString() === "1,2,3"' );
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "map", function( assert ){
-                var 
-                    list = [ 1, 2, 3 ],
-                    t1   = null,
-                    t2   = null,
-                    t3   = null
-                ;
-                t1 = 0;
-                t2 = "";
-                t1  = _XList.map( list, function( value, key, list ){
-                    t2 += "" + key;
-                    t3 = list;
-                    return value - 1;
-                } ).join("");
-                
-                _XList.map( list, function( value, key, list ){
-                    t3 = this;
-                    return value;
-                }, t3 );
-
-                assert( t1 === "012" && t2 === "012" && t3 == list, "检测map是否能正确执行" );
-            } ) 
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "filter", function( assert ){
-                var 
-                    list = [ 1, 2, 3 ],
-                    t1   = null,
-                    t2   = null,
-                    t3   = null
-                ;
-                t1 = 0;
-                t2 = "";
-                t1  = _XList.filter( list, function( value, key, list ){
-                    t2 += "" + key;
-                    t3 = list;
-                    return value % 2;
-                } ).join("");
-                
-                _XList.filter( list, function( value, key, list ){
-                    t3 = this;
-                }, t3 );
-
-                assert( t1 === "13" && t2 === "012" && t3 == list, "检测filter是否能正确执行" );
-            } )
-        ); 
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "reduce", function( assert ){
-                var 
-                    list = [ 1, 2, 3 ],
-                    t1   = null,
-                    t2   = null,
-                    t3   = null
-                ;
-                t1 = 0;
-                t2 = "";
-                t1  = _XList.reduce( list, function( sum, value, key, list ){
-                    t2 += "" + key;
-                    t3 = list;
-                    return sum + value;
-                } );
-                
-                t1 += _XList.reduce( list, function( sum, value, key, list ){
-                    t2 += "" + key;
-                    t3 = list;
-                    return sum - value;
-                }, 10, t3 );
-                assert( t1 === 10 && t2 === "12012" && t3 == list, "检测reduce是否能正确执行" );
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "some", function( assert ){
-                assert( _XList.some( [ 0, 0, 0 ], function( value ){ return !!value } ) === false, "检测some是否能正确执行-1" );
-                assert( _XList.some( [ 0, 1, 0 ], function( value ){ return !!value } ) === true, "检测some是否能正确执行-2" );
-                assert( _XList.some( [ 0, 1, 0 ], function( value ){ return value === this.a }, { a : 1 } ) === true, "检测some是否能正确执行-3" );
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "every", function( assert ){
-                assert( _XList.every( [ 0, 0, 0 ], function( value ){ return !!value } ) === false, "检测every是否能正确执行-1" );
-                assert( _XList.every( [ 0, 1, 0 ], function( value ){ return !!value } ) === false, "检测every是否能正确执行-2" );
-                assert( _XList.every( [ 1, 1, 1 ], function( value ){ return !!value } ) === true, "检测every是否能正确执行-3" );
-                assert( _XList.every( [ 1, 1, 1 ], function( value ){ return value === this.a }, { a : 1 } ) === true, "检测every是否能正确执行-4" );
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "remove", function( assert ){
-                assert( _XList.remove( [ 1, 1, 0, 0, 0, 1, 0 ], 0 ).join("") === "111", "检测remove是否能正确执行-1" );
-                assert( _XList.remove( [ 0, 0, 0, 0 ], 0 ).join("") === "", "检测remove是否能正确执行-2" );
-                assert( _XList.remove( [ 0, 0, 0, 0 ], 1 ).join("") === "0000", "检测remove是否能正确执行-3" );
-                
-            } )
-        );
-
-        util_unit.subUnit( "XList" ).append(
-            new _UTest( "shuffle", function( assert ){
-                assert( _XList.shuffle( [ 1, 2, 3, 4, 5, 6, 7 ] ) );
-                var list = _XList.shuffle( [ 1, 2, 3, 4, 5, 6, 7 ] );
-                var sum  = 0;
-                for( var i = 1; i <= 7; i++ ){
-                    _XList.remove( list, i );
-                    sum += list.length;
-                }
-                
-                assert( 
-                    sum === _XList.reduce( [ 1, 2, 3, 4, 5, 6 ], function( a, b ){
-                        return a + b
-                    } ), 
-                    "检测shuffle是否正确执行"
-                )
-            } )
-        );
-
-        //util_unit.subUnit( "XList" ).test();
-
         /**
          * is 用于判断指定对象与某一类的关系
          * @param { Function/Class } type 指定类型
@@ -1915,39 +954,6 @@
 
         };
 
-        util_unit.append(
-            new _UTest( "is", function( assert ){
-                assert( _is( null ) === false, "_is( null ) === false" );
-                assert( _is( Object, null ) === false, "_is( Object, null ) === false" );
-                assert( _is( Object, {} ) === true, "_is( Object, {} ) === true" );
-                assert( _is( String, "a" ) === true, '_is( String, "a" ) === true' );
-                assert( _is( String, new String ) === true, '_is( String, new String ) === true' );
-                function XString(){
-                    return String.apply( null, arguments );
-                };
-
-                XString.__instancelike__ = function( obj ){
-                    return typeof obj === "string" || obj instanceof String;
-                };                                   
-
-                assert( _is( XString, "xstring" ) === true, '_is( XString, "xstring" ) === true' );
-
-                function XObject(){
-
-                }
-
-                XObject.__instancelike__ = function( obj, type ){
-                    return obj !== null && obj !== undefined && ( type ? obj instanceof type : true )
-                };
-                assert( _is( XObject, null ) === false, "_is( XObject, null ) === false" );
-                assert( _is( XObject, [] ) === true, "_is( XObject, [] ) === true" );
-                assert( _is( XObject, [], Array ) === true, "_is( XObject, [], Array ) === true" );
-            } )
-        );
-
-        //util_unit.test(); 
-        gunit.append( util_unit );
-
     }();
 
 
@@ -1962,7 +968,6 @@
     void function __IMPLEMENT_XFUNCTION__(){
         
         var 
-            XFunction_unit    = new _UTest( "XFunction" ),
             ParamTypeModifier = null,
             METHODS           = null
         ;
@@ -2005,23 +1010,6 @@
                 || param === undefined 
                 || _is( this.type, param );
         };
-
-        XFunction_unit.append(
-            new _UTest( "Nullable", function( assert ){
-                assert( _is( _KeyWord, _Nullable, _KeyWord.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
-                assert( _Nullable( String ), "检测是否能正确执行-1" );
-                assert( _Nullable( String ) instanceof _Nullable, "检测是否能正确执行-2" );
-                assert( _is( _Nullable, _Nullable( String ) ) , "检测是否能正确执行-3" );
-                assert( _is( _Nullable( String ), null )  === true, "检测是否能正确执行-4" );
-                assert( _is( _Nullable( String ), undefined ) === true, "检测是否能正确执行-5" );
-                assert( _is( _Nullable( String ), 0 ) === false, "检测是否能正确执行-6" );
-                assert( _is( _Nullable( String ), false ) === false, "检测是否能正确执行-7" );
-                assert( _is( _Nullable( String ), "" ) === true, "检测是否能正确执行-8" );
-                assert( _is( _Nullable( String ), "Hello" ) === true, "检测是否能正确执行-9" );
-                assert( _is( _Nullable( String ), {} ) === false, "检测是否能正确执行-10" );
-                console.log( _Nullable( String ).toString() );
-            } )
-        );
     
         /**
          * Optional 用于标记函数参数列表中某一参数为可选参数
@@ -2071,20 +1059,6 @@
                 " )" );
             }, ParamTypeModifier )
         );
-        
-        XFunction_unit.append(
-            new _UTest( "Optional", function( assert ){
-                assert( _is( _KeyWord, _Optional, _Optional.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
-                assert(  _Optional( String ), "检测是否能正确执行-1" );
-                assert(  _Optional( String ) instanceof _Optional, "检测是否能正确执行-2" );
-                assert(  _is( _Optional, _Optional( String ) ), "检测是否能正确执行-3" );
-                assert(  _Optional( String ).type === String, "检测是否能正确执行-4" );
-                assert(  _Optional( String ).value === "", "检测是否能正确执行-5" );
-                assert(  _Optional( Object ).value , "检测是否能正确执行-6" );
-                assert(  typeof _Optional( Number ).value  === "number", "检测是否能正确执行-7" );
-                assert(  _Optional( Object, null ).value === null, "检测是否能正确执行-8" );
-            } )
-        );
 
         /**
          * Params 可变参数集
@@ -2118,20 +1092,6 @@
             }
             return true;
         };
-
-        XFunction_unit.append(
-            new _UTest( "Params", function( assert ){
-                assert( _is( _KeyWord, _Params, _KeyWord.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
-                assert( _Params( String ), "检测是否能正确执行-1" );
-                assert( _Params( String ) instanceof _Params, "检测是否能正确执行-2" );
-                assert( _is( _Params, _Params( String ) ) , "检测是否能正确执行-3" );
-                assert( _is( _Params( String ), [] )  === true, "检测是否能正确执行-4" );
-                assert( _is( _Params( String ), [ "A", "B", "C" ] ) === true, "检测是否能正确执行-5" );
-                assert( _is( _Params( String ), null ) === false, "检测是否能正确执行-6" );
-                assert( _is( _Params( String ), "a" ) === false, "检测是否能正确执行-7" );
-                console.log( _Params( String ).toString() );
-            } )
-        );
 
         /**
          * ParamTypeTable 参数类型表
@@ -2300,59 +1260,6 @@
         _ParamTypeTable.prototype.toString = function toString(){
             return this.__COX_SIGN__;
         };
-
-        XFunction_unit.append(
-            new _UTest( "ParamTypeTable", function( assert ){
-                var 
-                    t1 = _ParamTypeTable(),
-                    t2 = _ParamTypeTable( String, Number, Boolean ),
-                    t3 = _ParamTypeTable( _Nullable( String ), Number, _Params( Boolean ) )
-                ;
-                assert( _is( _KeyWord, _ParamTypeTable, _KeyWord.SUBSIDIARY ), "检测是否为关键字" );
-                assert( t1, "检测是否能正确执行-1" );
-                assert( t1 instanceof _ParamTypeTable, "检测是否能正确执行-2" );
-                assert( t1.minParamCount === 0, "检测是否能正确执行-3" );
-                assert( t1.maxParamCount === 0, "检测是否能正确执行-4" );
-                assert( t1.parse( [] ) instanceof Array, "检测是否能正确执行-5" );
-                assert( t1.parse( [] ).length === 0, "检测是否能正确执行-6" );
-                assert( t2, "检测是否能正确执行-7" );
-                assert( t2.minParamCount === 3, "检测是否能正确执行-8" );
-                assert( t2.maxParamCount === 3, "检测是否能正确执行-9" );
-                assert( t2.parse( [] ) === null, "检测是否能正确执行-10" );
-                assert( t2.parse( [] ) === null, "检测是否能正确执行-11" );
-                assert( t2.parse( [ "", 0, true ] ), "检测是否能正确执行-12" );
-                assert( t2.parse( [ "x", 0, true ] ).join( "" ) === "x0true", "检测是否能正确执行-13" );
-                assert( t2.parse( [ null, 0, true ] ) === null, "检测是否能正确执行-013" );
-                assert( t3.minParamCount === 2, "检测是否能正确执行-14" );
-                assert( t3.maxParamCount === Infinity, "检测是否能正确执行-15" );
-                assert( t3.parse( [ null, 0 ] ).length === 3, "检测是否能正确执行-16" );
-                assert( t3.parse( [ null, 0, true ] ).length === 3, "检测是否能正确执行-17" );
-                assert( t3.parse( [ "13", 0, true, false, false, true ] ).length === 3, "检测是否能正确执行-18" );
-                assert( t3.parse( [ "13", 0, true, false, false, true ] ).join("") === "130true,false,false,true", "检测是否能正确执行-19" );
-                assert( t3.parse( [ "13", 0, true, false, 0, true ] ) === null, "检测是否能正确执行-20" );
-                assert( t3.equals( _Nullable( String ), Number, _Params( Boolean ) ) === true, "检测是否能正确执行-21" );
-                assert( t3.equals( _ParamTypeTable( _Nullable( String ), Number, _Params( Boolean ) ) ) === true, "检测是否能正确执行-22" );
-                assert( t3.equals( t3 ) === true, "检测是否能正确执行-23" );
-                assert( t3.equals( t2 ) === false, "检测是否能正确执行-24" );
-                console.log( t3.toString() );
-                
-                t1 = _ParamTypeTable( 
-                    _Optional( String ), 
-                    _Optional( Number ), 
-                    Number, 
-                    _Optional( Boolean ), 
-                    String, 
-                    _Optional( String ), 
-                    String, 
-                    _Params( Number ) 
-                );
-                assert( t1.parse( [ "A", 1, "B", "C", 1, 2, 3 ] ), "检测是否能正确执行-25" );
-                assert( t1.parse( [ "A", 1, "B", 1, 2, 3 ] ) === null, "检测是否能正确执行-26" );
-                console.log( t1.toString() );
-            } )
-        );
-        
-        //XFunction_unit.subUnit( "ParamTypeTable" ).test();
 
         METHODS    = {
             /**
@@ -2528,97 +1435,6 @@
             };
 
         };
-
-        XFunction_unit.append(
-            new _UTest( "XFunction", function( assert ){
-                var 
-                    v  = 0,
-                    f1 = _XFunction( function f1(){ v = 1 } ),
-                    f2 = null
-                ;
-                assert( _is( _KeyWord, _XFunction, _KeyWord.DATATYPE ), "检测是否为关键字" );
-                assert( _XFunction, "检测是否能正确执行-2" );
-                assert( typeof f1 === "function", "检测是否能正确执行-3" );
-                assert( (f1(), v) === 1, "检测是否能正确执行-4" );
-                f1.define( Number, function(n){ v = n; } );
-                assert( (f1(2), v) === 2, "检测是否能正确执行-5" );
-                f1.define( Number, Number, function(n1, n2){ v = n1 * n2; } );
-                assert( (f1(1,1), v) === 1, "检测是否能正确执行-6" );
-                f1.define( _Params( Number ), function(ns){
-                    v = _XList.reduce( ns, function( a, b ){
-                        return a + b;
-                    } );
-                } );
-                assert( (f1(1,1,1,5), v) === 8, "检测是否能正确执行-7" );
-                assert( (f1(2,2), v) === 4, "检测是否能正确执行-8" );
-                f2 = f1.clone();
-                f2.define( Number, Number, function( n1, n2 ){ return v = Math.pow( n1, n2 ) } );
-                assert( (f1(2,2), v) === 4, "检测是否能正确执行-9" );
-                assert( (f2(), v) === 1, "检测是否能正确执行-10" );
-                assert( (f2(2), v) === 2, "检测是否能正确执行-11" );
-                assert( (f2(2,3), v) === 8, "检测是否能正确执行-12" );
-                assert( f2(1,0) === 1, "检测是否能正确执行-13" );
-                assert( f2.defined( Number, Number ) === true, "检测是否能正确执行-14" );
-                assert( f2.defined( ) === true, "检测是否能正确执行-15" );
-                assert( f2.defined( _ParamTypeTable() ) === true, "检测是否能正确执行-015" );
-                assert( f2.defined( _ParamTypeTable( Number ) ) === true, "检测是否能正确执行-16" );
-                assert( f2.defined( _ParamTypeTable( String ) ) === false, "检测是否能正确执行-17" );
-                assert( f2.defined( Number, String ) === false, "检测是否能正确执行-18" );
-                
-                console.log( f1 );
-                console.log( f2 );
-                //assert( f1, "检测是否能正确执行-3" )
-            } )
-        );
-        
-        //XFunction_unit.subUnit( "XFunction" ).test();
-
-        XFunction_unit.subUnit( "XFunction" ).append(
-            new _UTest( "bind", function( assert ){
-                var 
-                    obj = {},
-                    t1  = null,
-                    t2  = null,
-                    f1  = null
-                ;
-                f1 = _XFunction.bind( function(){
-                    t1 = this;
-                }, obj );
-                f1();
-                f1 = _XFunction.bind( function( A, B, c ){
-                    t2 = A + B + c;
-                    t1 = this;
-                }, t1, 1, 2 );
-                f1( 3 );
-                assert( t1 === obj && t2 === 6, "检测bind是否能正确执行" );
-            } )
-        );
-
-        XFunction_unit.subUnit( "XFunction" ).append(
-            new _UTest( "memoize", function( assert ){
-                var 
-                    t1 = null,
-                    f1 = null
-                ;
-                t1 = 0;
-                f1 = _XFunction.memoize( function( n ){
-                    t1 += n;
-                } );
-
-                f1( 1 );
-                f1( 1 );
-                f1( 1 );
-                f1( 2 );
-                f1( 2 );
-
-                assert( t1 === 3, "检测memoize是否能被正确执行" );
-            } )
-        );
-
-        gunit.append( XFunction_unit );
-        //XFunction_unit.subUnit( "XFunction" ).test();
-        //XFunction_unit.test();
-
     }();
 
 
@@ -2632,7 +1448,6 @@
      */
     void function __IMPLEMENT_OOP__(){
         var 
-            oop_unit  = new _UTest( "Oop" ),
             BaseClass = null,
             ClassMode = null
         ;
@@ -2658,16 +1473,6 @@
                     }
                 }
                 this.interfaces = interfaces;
-            } )
-        );
-
-        oop_unit.append(
-            new _UTest( "Modiffier", function( assert ){
-                assert( _is( _KeyWord, _Extends, _KeyWord.SUBSIDIARY ), "检测Extends是否为关键字" );
-                assert( _is( _KeyWord, _Implements, _KeyWord.SUBSIDIARY ), "检测Implements是否为关键字" );
-                assert( _Extends(), "检测是否能正确执行-1" );
-                assert( _Extends(), "检测是否能正确执行-2" );
-        
             } )
         );
 
@@ -2871,94 +1676,6 @@
         _Interface.prototype.toString = function toString(){
             return this.__COX_SIGN__;
         };
-
-        oop_unit.append(
-            new _UTest( "Interface", function( assert ){
-                var 
-                    A1 = _Interface( "A1", null, function( Static, Public ){
-
-                    } ),
-
-                    A2 = _Interface( "A2", null, function( Static, Public ){
-                        Static.m1 = Function;
-                        Public.m1 = _ParamTypeTable();
-                        Public.m2 = [
-                            _ParamTypeTable( ),
-                            _ParamTypeTable( String ),
-                            _ParamTypeTable( String, Boolean, String ),
-                        ];
-                    } ),
-
-                    A3 = _Interface( "A3", _Extends( A2 ), function( Static, Public ){
-                        Static.m1 = _ParamTypeTable( Boolean );
-                        Public.m2 = _ParamTypeTable( Boolean, String );
-                    } ),
-                    A4 = null,
-                    v  = null
-                ;
-                assert( _is( _KeyWord, _Interface, _KeyWord.DATATYPE ), "检测是否为关键字" );
-                assert( _Interface, "检测是否能正确执行-1" );
-                assert( A1 instanceof _Interface, "检测是否能正确执行-2" );
-                assert( A2 instanceof _Interface, "检测是否能正确执行-3" );
-                assert( A2.__COX_INTERFACE_IMETHODS__.m1 instanceof Array, "检测是不能正确执行-4" );
-                assert( A3 instanceof _Interface, "检测是否能正确执行-5" );
-                
-                try{
-                    A4 = _Interface( "A4", null, function( Static, Public ){
-                        Static.m1 = function(){}
-                        Public.m1 = String;
-                    } );
-                }catch( e ){
-                    v = Error;
-                }
-
-                assert( v === Error, "检测是否能正确执行-4" );
-                
-                try{
-                    A4 = _Interface( "A4", _Extends( A1, A2, A3, Function ), function( Static, Public ){
-
-                    } );
-                }catch( e ){
-                    v = TypeError;
-                }
-                
-                assert( v === TypeError, "检测是否正确执行-5" );
-
-                A4 = _Interface( "A4", _Extends( A1, A3 ), function( Static, Public ){
-                    Static.m2 = _ParamTypeTable( Boolean );
-                } );
-
-                assert( A3.extended( A2 ), "检测是否能正确执行-6" );
-                assert( !A3.extended( A1 ), "检测是否能正确执行-7" );
-                assert( A4.extended( A1 ), "检测是否能正确执行-8" );
-                assert( A4.extended( A3 ), "检测是否能正确执行-9" );
-                assert( A4.extended( A2 ), "检测是否能正确执行-10" );
-                assert( A1.implementIn( {} ), "检测是否能正确执行-11" );
-                function T1(){
-
-                }
-                T1.m1 = _XFunction( Boolean, function(b){} );
-                T1.m2 = _XFunction( Boolean, function(b){} );
-                T1.prototype.m1 = _XFunction( function(){} );
-                T1.prototype.m2 = _XFunction( function(){} );
-                T1.prototype.m2.define( String, function( s ){} );
-                T1.prototype.m2.define( Boolean, String, function( b, s ){} );
-                T1.prototype.m2.define( String, Boolean, String, function( s1, b, s2 ){} );
-                v = null;
-                try{
-                    A2.implementIn( {} )
-                }catch( e ){
-                    v = Error;
-                }
-                assert( v === Error, "检测是否能正确执行-12" );
-                assert( A2.implementIn( T1 ), "检测是否能正确执行-13" );
-                assert( A3.implementIn( new T1 ), "检测是否能正确执行-14" );
-                assert( A4.implementIn( new T1 ), "检测是否能正确执行-15" );
-                assert( _is( A4, new T1 ), "检测是否能正确执行-16" );
-            } )
-        );
-        
-        //oop_unit.subUnit( "Interface" ).test();
 
         /**
          * ClassMode 类模式
@@ -3459,308 +2176,10 @@
             }
         );
 
-
-        oop_unit.append(
-            new _UTest( "Class.Entity", function( assert ){
-                var 
-                    C1 = _Class( "C1", _Entity, null, null, function C1( Static, Public ){
-                        //..
-                    } ),
-                    C2 = _Class( "C2", _Entity, null, null, function C2( Static, Public ){
-                        Static.P1 = 0;
-                        Static.toString = function toString(){
-                            return "C2";
-                        };
-                        Static.extended = function(){};
-                        Public.constructor = _XFunction( function(){
-                            Static.P1++;
-                        } );
-                        Public.toString = function toString(){
-                            return "C2 Object[" + Static.P1 + "]";
-                        };
-                        Public.Super = function(){};
-                    } )
-                ;
-                assert( C1, "检测是否能正确执行-1" );
-                assert( C1 instanceof Function, "检测是否能正确执行-2" );
-                assert( new C1 instanceof C1, "检测是否能正确执行-3" );
-                assert( C2, "检测是否能正确执行-4" );
-                assert( C2.P1 === 0, "检测是否能正确执行-5" );
-                assert( new C2, "检测是否能正确执行-6" );
-                assert( C2.P1 === 1, "检测是否能正确执行-7" );
-                assert( new C2().toString !== BaseClass.prototype.toString, "检测是否能正确执行-8" );
-                assert( C2.toString() === "C2", "检测是否能正确执行-9" );
-                assert( C2.extended === BaseClass.extended, "检测是否能正确执行-10" );
-                assert( C1.extended === BaseClass.extended, "检测是否能正确执行-11" );
-                assert( new C2().Super === BaseClass.prototype.Super, "检测是否能正确执行-12" );
-                assert( new C2 instanceof BaseClass, "检测是否能正确执行-13" );
-                assert( new C2 instanceof _XObject, "检测是否能正确执行-14" );
-                console.log( C1 );        
-                console.log( new C1().toString() );
-                console.log( C2 );
-                console.log( new C2().toString() );
-            } )
-        );
-        //oop_unit.subUnit( "Class.Entity" ).test();
-        
-        oop_unit.append(
-            new _UTest( "Class.Abstract", function( assert ){
-                var 
-                    C1 = _Class( "C1", _Abstract, null, null, function C1( Static, Public ){
-                        Static.m1 = Function;
-                        Static.P1 = 0;
-                        Public.constructor = _ParamTypeTable();
-                    } ),
-                    t  = null
-                ;
-
-                assert( C1, "检测是否能正确执行-1" );
-                assert( C1 instanceof Function, "检测是否能正确执行-2" );
-                try{
-                    t = new C1();
-                }catch( e ){
-                    t = Error;
-                }
-                assert( t === Error, "检测是否能正确执行-3" );
-                assert( !( "m1" in C1 ), "检测是否能正确执行-4" );
-                assert( C1.P1 === 0, "检测是否能正确执行-5" );
-                assert( C1.prototype.constructor === C1, "检测是否能正确执行-6" );
-                console.log( C1 );
-            } )
-        );
-        //oop_unit.subUnit( "Class.Abstract" ).test();
-        
-        oop_unit.append(
-            new _UTest( "Class.Single", function( assert ){
-                var 
-                    C1 = _Class( "C1", _Single, null, null, function C1( Static, Public ){
-                    } ),
-                    C2 = _Class( "C2", _Single, null, null, function C2( Static, Public ){
-                        Static.count = 0;
-                        Public.constructor = function(){
-                            Static.count++;
-                        }
-                    } ),
-                    t  = null
-                ;
-                assert( C1, "检测是否能正确执行-1" );
-                assert( t = new C1, "检测是否能正确执行-2" );
-                assert( t === new C1, "检测是否能正确执行-3" );
-                new C2;
-                new C2;
-                assert( new C2 instanceof C2, "检测是否能正确执行-4" );
-                assert( C2.count === 1, "检测是否能正确执行-5" );
-                console.log( C2 );
-                console.log( new C2().toString() );
-            } )
-        );
-        //oop_unit.subUnit( "Class.Single" ).test();
-
-        oop_unit.append(
-            new _UTest( "Class.Finaly", function( assert ){
-                var 
-                    C1 = _Class( "C1", _Finaly, null, null, function C1( Static, Public ){
-                        
-                    } ),
-                    C2 = null,
-                    t = null
-                ;
-                assert( C1, "检测是否能正确执行-1" );
-                assert( C1 instanceof Function, "检测是否能正确执行-2" );
-                assert( new C1 instanceof C1, "检测是否能正确执行-3" );
-                assert( new C1 instanceof BaseClass, "检测是否能正确执行-4" );
-                assert( new C1 instanceof _XObject, "检测是否能正确执行-5" );
-                try{
-                    C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Static, Public ){
-
-                    } );
-                }catch( e ){
-                    t = Error;
-                }
-                assert( t === Error, "检测是否能正确执行-6" );
-            } )
-        );
-        //oop_unit.subUnit( "Class.Finaly" ).test();
-
-        oop_unit.append(
-            new _UTest( "Class.Extends", function( assert ){
-                var 
-                    t  = null,
-                    C1 = _Class( "C1", _Entity, null, null, function C1( Static, Public ){
-                        Static.p1 = -1;
-                        Static.m1 = function(){
-                            //- - 哎......
-                            this.p1--;
-                        };
-                        Public.constructor = _XFunction( function(){
-                            t = "C1";
-                        } );
-                    } ),
-                    C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Static, Public ){
-                        
-                        Public.constructor.define( function(){
-                            this.Super( "constructor" );
-                            t += "->C2";
-                        } );
-
-                        Public.m1 = function(){
-                            this.Super( "m1" );
-                        };
-                    } ),
-                    a = null
-                ;
-                assert( C1 instanceof Function, "检测是否能正确执行-1" );
-                assert( C2 instanceof Function, "检测是否能正确执行-2" );
-                assert( C1.extended( _XObject ), "检测是否能正确执行-3" );
-                assert( C1.extended( BaseClass ), "检测是否能正确执行-4" );
-                assert( C1.extended( C2 ) === false, "检测是否能正确执行-5" );
-                assert( C2.extended( _XObject ), "检测是否能正确执行-6" );
-                assert( C2.extended( BaseClass ), "检测是否能正确执行-7" );
-                assert( C2.extended( C1 ), "检测是否能正确执行-8" );
-                a = new C2();
-                assert( a instanceof C2, "检测是否能正确执行-9" );
-                assert( a instanceof C1, "检测是否能正确执行-10" );
-                assert( a instanceof BaseClass, "检测是否能正确执行-11" );
-                assert( a instanceof _XObject, "检测是否能正确执行-12" );
-                assert( t === "C1->C2", "检测是否能正确执行-13" );
-                C2.m1();
-                assert( C2.p1 === -2, "检测是否能正确执行-14" );
-                assert( C1.p1 === -1, "检测是否能正确执行-15" );
-                try{
-                    a.m1();
-                }catch(e){
-                    t = Error;
-                }
-                assert( t === Error, "检测是否能正确执行-16" );
-                assert( a.instanceOf( C1 ), "检测是否能正确执行-17" );
-                assert( a.instanceOf( C2 ), "检测是否能正确执行-18" );
-                assert( a.instanceOf( BaseClass ), "检测是否能正确执行-19" );
-                assert( a.instanceOf( Function ) === false, "检测是否能正确执行-20" );
-            } )
-        );
-
-        //oop_unit.subUnit( "Class.Extends" ).test();
-
-        oop_unit.append(
-            new _UTest( "Class.Implements", function ( assert ){
-                var 
-                    IA1 = _Interface( "IA1", null, function IA1( Static, Public ){
-
-                    } ),
-                    IA2 = _Interface( "IA2", null, function IA2( Static, Public ){
-                        Static.m1 = Function;
-                        Public.constructor = _ParamTypeTable( Boolean );
-                    } ),
-                    IA3 = _Interface( "IA3", _Extends( IA1, IA2 ), function IA3( Static, Public ){
-                        Public.constructor = [
-                            _ParamTypeTable( String, Boolean ),
-                            _ParamTypeTable( String, String, Boolean )
-                        ];
-                    } ),
-                    IA4 = _Interface( "IA4", null, function IA4( Static, Public ){
-                        Static.m1 = Function;
-                        Public.constructor = _ParamTypeTable( Boolean );
-                    } ),
-                    C1 = _Class( "C1", _Entity, null, _Implements( IA1, IA3 ), function C1( Static, Public ){
-                        Static.m1 = function(){};
-                        Public.constructor = _XFunction( Boolean, function(){
-                            //...
-                        } );
-                        Public.constructor.define( String, Boolean, function(){
-                            //...
-                        } );
-                        Public.constructor.define( String, String, Boolean, function(){
-                            //...
-                        } );
-                    } ),
-                    t = null
-                ;
-
-                assert( C1 instanceof Function, "检测是否能正确执行-1" );
-                assert( new C1( true ) instanceof C1, "检测是否能正确执行-2" );
-                assert( new C1( "A", true ) instanceof C1, "检测是否能正确执行-3" );
-                assert( new C1( "A", "B", true ) instanceof C1, "检测是否能正确执行-5" );
-                try{
-                    new C1();
-                }catch( e ){
-                    t = Error;
-                }
-                assert( t === Error, "检测是否能正确执行-6" );
-                assert( C1.implemented( IA1 ), "检测是否能正确执行-7" );
-                assert( C1.implemented( IA2 ), "检测是否能正确执行-8" );
-                assert( C1.implemented( IA3 ), "检测是否能正确执行-9" );
-                assert( IA1.implementIn( C1 ) , "检测是否能正确执行-10" );
-                assert( IA2.implementIn( C1 ) , "检测是否能正确执行-11" );
-                assert( IA3.implementIn( C1 ) , "检测是否能正确执行-12" );
-                assert( C1.implemented( IA4 ) === false , "检测是否能正确执行-13" );
-                assert( IA4.implementIn( C1 ) , "检测是否能正确执行-14" );
-                assert( new C1( true ).instanceOf( IA1 ), "检测是否能正确执行-15" );
-                assert( new C1( true ).instanceOf( IA2 ), "检测是否能正确执行-16" );
-                assert( new C1( true ).instanceOf( IA3 ), "检测是否能正确执行-17" );
-                assert( new C1( true ).instanceOf( IA4 ) === false, "检测是否能正确执行-17" );
-            } )
-        );
-        //oop_unit.subUnit( "Class.Implements" ).test();
-
-        oop_unit.append(
-            new _UTest( "Class.multiple", function( assert ){
-                var
-                    I1 = _Interface( "I1", null, function I1( Static, Public ){
-                        Public.m1 = _ParamTypeTable( String );
-                    } ),
-                    I2 = _Interface( "I2", null, function I2( Static, Public ){
-                        Public.constructor = _ParamTypeTable();
-                        Public.m1 = _ParamTypeTable( Boolean, String );
-                    } ),
-                    AC1 = _Class( "AC1", _Abstract, null, _Implements( I2 ), function AC1( Static, Public ){
-                        Public.constructor = _ParamTypeTable( String );
-                        Public.m1 = _XFunction( String, function( v ){
-                            return v;
-                        } );
-                    } ),
-                    AC2 = _Class( "AC2", _Abstract, _Extends( AC1 ), null, function AC2( Static, Public ){
-                        Public.constructor = _ParamTypeTable( String, Static );
-                    } ),
-                    C1 = _Class( "C1", _Entity, _Extends( AC2 ), _Implements( I1, I2 ), function C1( Staitc, Public ){
-                        Public.constructor = _XFunction( function(){} );
-                        Public.constructor.define( String, function(){} );
-                        Public.constructor.define( String, AC2, function(){} );
-                        Public.m1.define( Boolean, String, function(){} );
-                    } ),
-                    C2 = null,
-                    t  = null
-                ;
-                assert( C1 instanceof Function, "检测是否正确执行-1" );
-                assert( C1.implemented( I1 ), "检测是否能正确执行-2" );
-                assert( C1.implemented( I2 ), "检测是否能正确执行-3" );
-                assert( C1.implemented( AC1 ), "检测是否能正确执行-4" );
-                assert( C1.implemented( AC2 ), "检测是否能正确执行-5" );
-                assert( C1.extended( AC1 ), "检测是否能正确执行-6" );
-                assert( C1.extended( AC2 ), "检测是否能正确执行-7" );
-                assert( new C1 instanceof C1, "检测是否能正确执行-8" );
-                assert( new C1( "A" ) instanceof C1, "检测是否能正确执行-9" );
-                assert( new C1( "A", new C1 ) instanceof AC1, "检测是否能正确执行-10" );
-                assert( new C1().m1( "A" ) === "A", "检测是否能正确执行-11" );
-                assert( new C1().m1( true, "A" ) === undefined, "检测是否能正确执行-12" );
-                try{
-                    C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Staitc, Public ){
-                        Public.constructor = function(){}
-                    } )
-                }catch( e ){
-                    t = Error;
-                }
-
-                assert( t === Error, "检测是否能正确执行-13" );
-            } )
-        );
-        //oop_unit.subUnit( "Class.multiple" ).test();
-        gunit.append( oop_unit );
-        //oop_unit.test();
     }();
 
     void function __IMPLEMENT_TOOLS__(){
         var 
-            tools_unit         = new _UTest( "Tools" ),
             DSTATE_UNFULFILLED = 0,
             DSTATE_FULFILLED   = 1,
             DSTATE_REJECTED    = -1,
@@ -3847,39 +2266,7 @@
             };
 
         } );
-        
-        tools_unit.append(
-            new _UTest( "EventListener", function( assert ){
-                var 
-                    e1 = new _EventListener( "e1", {} ),
-                    t = 0
-                ;
-
-                e1.add( function(){
-                    t = 1;
-                } );
-                e1.add( function(){
-                    t += 1;
-                } );
-                e1.add( function( v ){
-                    t -= v
-                } );
-                function f1(){
-                    t = 1000000;
-                }
-                e1.add( f1 );
-                e1.remove( f1 );
-                assert( e1 instanceof _EventListener, "检测是否能正确执行-1" );
-                e1.notify( [1], null );
-                assert( t === 1, "检测是否能正确执行-2" );
-                e1.notify( [2], null );
-                assert( t === 0, "检测是否能正确执行-3" );
-                e1.remove();
-                e1.notify( [10000], null );
-                assert( t === 0, "检测是否能正确执行-4" );
-            } )
-        );
-        
+                
         _Class( "Event", _Entity, null, _Implements( IEvent ), function( Static, Public ){
             _Event = this;
             Public.constructor = _XFunction( 
@@ -4012,93 +2399,6 @@
             Public.once = Public.addOnceEventListener;
             Public.un   = Public.removeEventListener;
         } );
-        
-        tools_unit.append(
-            new _UTest( "EventSource", function( assert ){
-                var 
-                    obj = new _EventSource(),
-                    t   = 0
-                ;
-
-                obj.dispatchEvent(
-                    new _Event( "e1" ),
-                    new _Event( "e2" ),
-                    new _Event( "e3" )
-                );
-                obj.addEventListener( "e1", function(){
-                    t = 0;
-                } );
-                obj.value = 0;
-                obj.on( "e1", function(){
-                    t++;
-                } );
-                obj.on( "e2", function(v){
-                    t+=v;
-                } );
-                function f1(){
-                    t = this.value;
-                }
-                obj.on( "e3", f1 );
-
-                obj.fireEvent( "e1" );
-                assert( obj instanceof _EventSource, "检测是否能正确执行-1" );
-                assert( t === 1, "检测是否能正确执行-2" );
-                obj.fireEvent( "e2", [1] );
-                assert( t === 2, "检测是否能正确执行-3" );
-                obj.fireEvent( "e3" );
-                assert( t === 0, "检测是否能正确执行-4" );
-                obj.fireEvent( "e3", [] );
-                assert( t === 0, "检测是否能正确执行-5" );
-                obj.fireEvent( "e3", [], {value:10} );
-                assert( t === 10, "检测是否能正确执行-6" );
-                obj.fireEvent( "e3", {value:10} );
-                assert( t === 10, "检测是否能正确执行-7" );
-                obj.removeEventListener( "e3", f1 );
-                obj.fireEvent( "e3" );
-                assert( t === 10, "检测是否能正确执行-8" );
-                obj.un( "e1" );
-                obj.fireEvent( "e1" );
-                assert( t === 10, "检测是否能正确执行-9" );
-                obj.addOnceEventListener( "e1", function(){
-                    t += 10;
-                } );
-                obj.fireEvent( "e1" );
-                assert( t === 20, "检测是否能正确执行-10" );
-                obj.fireEvent( "e1" );
-                assert( t === 20, "检测是否能正确执行-11" );
-                obj.un( "e1" );
-                t = 0;
-                obj.on( "e1", function(){
-                    t = 1;
-                } );
-                obj.on( "e1", function(){
-                    t += 1;
-                } );
-                function f2(){
-                    t = 10000;
-                }
-                obj.on( "e1", function(){
-                    t += 1;
-                    obj.un( "e1", f2 );
-                } );
-                obj.on( "e1", f2 );
-
-                obj.on( "e1", function(){
-                    t += 1;
-                    obj.getEvent("e1").stopPropagation();
-                } );
-                obj.on( "e1", function(){
-                    t = -1;
-                } );
-                obj.on( "e1", function(){
-                    t = -1;
-                } );
-                obj.fireEvent( "e1" );
-                assert( t === 4, "检测是否能正确执行-12" );
-            } )
-        );
-
-        //tools_unit.subUnit( "EventSource" ).test();
 
         /**
          * Deferred 延迟操作管理类
@@ -4252,111 +2552,6 @@
             };
 
         } );
-        
-        tools_unit.append(
-            new _UTest( "Deferred", function( assert ){
-                var 
-                    d1 = new _Deferred(),
-                    t  = []
-                ;
-                assert( d1 instanceof _Deferred, "检测是否能正确执行-1" );
-                assert( d1 instanceof _EventSource, "检测是否能正确执行-2" );
-                d1.then( function( v ){
-                    t.push( 1 );
-                } );
-                
-                d1.then( function( v ){
-                    t.push( 2 );
-                } );
-                d1.done( function( v ){
-                    t.push( 3 );
-                } );
-                d1.resolved( 10 );
-                d1.then( function( v ){
-                    t.push( 4 );
-                } );
-                d1.done( function( v ){
-                    t.push( 5 );
-                } );
-                assert( t.join("") === "12345", "检测是否能正确执行-3" );
-
-                t.length = 0;
-                d1 = new _Deferred();
-                d1.then( function( v ){
-                    t.push( 1 );
-                } );
-                d1.then( function( v, error, end ){
-                    t.push( 2 );
-                    end();
-                } );
-                d1.then( function( v ){
-                    t.push( 3 );
-                } );
-
-                d1.then( function( v ){
-                    t.push( 4 );
-                } );
-                d1.done( function( v ){
-                    t.push( 5 );
-                } );
-                d1.resolved( 10 );
-                assert( t.join("") === "125", "检测是否能正确执行-4" );
-                assert( d1.isDone() === true, "检测是否能正确执行-5" );
-                assert( d1.getValue() === 10, "检测是否能正确执行-6" );
-                assert( d1.isResolved() === true, "检测是否能正确执行-7" );
-                assert( d1.isRejected() === false, "检测是否能正确执行-8" );
-
-                d1 = new _Deferred();
-                t = 5;
-                d1.then(
-                    function(){}, function(){ t--; }
-                );
-                d1.then(
-                    function(){}, function(){ t-= 2; }
-                );
-                d1.then(
-                    function(){}, function(){ t-= 2; }
-                );
-                d1.done( function( v ){
-                    t++;
-                } );
-
-                d1.rejected( 1 );
-                assert( t === 1, "检测是否能正确执行-9" );
-
-                d1 = new _Deferred();
-                t  = 0;
-                d1.then(
-                    function( v, error, end ){
-                        error( "error" );
-                    }
-                );
-                d1.then(
-                    function( v, error, end ){
-                        t = 10;
-                    },
-                    function( v, error ){
-                        if( error ){
-                            t += 5;
-                        }
-                    }
-                );
-                d1.then(
-                    function(){
-                        t += 5;
-                    },
-                    function( v ){
-                        t -= v;
-                    }
-                );
-                d1.done( function( v ){
-                    t += v;
-                } );
-                d1.resolved( 10 );
-                assert( t === 5, "检测是否能正确执行-10" );
-            } )
-        );
-        //tools_unit.subUnit( "Deferred" ).test();
 
         /**
          * Class: DeferredList 延迟操作组管理类
@@ -4487,137 +2682,6 @@
             };
 
         } );
-        
-        tools_unit.append(
-            new _UTest( "DeferredList", function( assert ){
-                var 
-                    d1 = new _Deferred(),
-                    d2 = new _Deferred(),
-                    d3 = new _Deferred(),
-                    ds = new _DeferredList( d1, d2, d3 ),
-                    t  = 0
-                ;
-
-                d1.then( function(){ t++; }, function(){ t-- } );
-                d2.then( function(){ t+=2; }, function(){ t-=2 } );
-                d3.then( function(){ t+=3; }, function(){ t-=3 } );
-                ds.done( function(){
-                    t += 10;
-                } );
-                ds.resolved(10);
-                assert( t === 16, "检测是否能正确执行-1" );
-                assert( ds.getValue().join("") === "101010", "检测是否能正确执行-2" );
-                
-                d1 = new _Deferred();
-                d2 = new _Deferred();
-                d3 = new _Deferred();
-                t  = 0;
-                d1.then( function(){ t++; }, function(){ t-- } );
-                d2.then( function(){ t+=2; }, function(){ t-=2 } );
-                d3.then( function(){ t+=3; }, function(){ t-=3 } );
-                ds.done( function(){
-                    t += 10;
-                } );
-                ds = new _DeferredList( d1, d2, d3 );
-                ds.rejected( 10 );
-                assert( t === 4, "检测是否能正确执行-3" );
-
-                d1 = new _Deferred();
-                d2 = new _Deferred();
-                d3 = new _Deferred();
-                t  = 0;
-                d1.then( function(){ t++; }, function(){ t-- } );
-                d2.then( function( v, error ){ error("err") }, function(){ t-=2 } );
-                d3.then( function(){ t+=3; }, function(){ t-=3 } );
-                ds.done( function(){
-                    t += 10;
-                } );
-                ds = new _DeferredList( d1, d2, d3 );
-                ds.resolved( 10 );
-                assert( t === 12, "检测是否能正确执行-4" );
-                d1 = new _Deferred();
-                d2 = new _Deferred();
-                d3 = new _Deferred();
-                t  = 0;
-                d1.then( function( v ){ t += v; }, function(){ } );
-                d2.then( function( v ){ t += v; }, function(){ } );
-                d3.then( function( v ){ t += v; }, function(){ } );
-                ds = new _DeferredList( d1, d2, d3 );
-                ds.then( function(){
-                    t++;
-                } );
-                ds.then( function( v, error, end ){
-                    end();
-                } );
-                ds.then( function( v ){
-                    t = 0;
-                } );
-                ds.done( function(){
-                    t++;
-                } );
-                d1.resolved( 1 );
-                d2.resolved( 2 );
-                d3.resolved( 3 );
-                assert( t === 8, "检测是否能正确执行-5" );
-                d1 = new _Deferred();
-                d2 = new _Deferred();
-                d3 = new _Deferred();
-                t  = 0;
-                d1.then( function( v ){ t += v; }, function(){ } );
-                d2.then( function( v ){ t += v; }, function(){ } );
-                d3.then( function( v ){ t += v; }, function(){ } );
-                ds = new _DeferredList( d1, d2, d3 );
-                ds.then( 
-                    function(){t++;},
-                    function(){t--;}
-                );
-                ds.then( function( v, error, end ){
-                    end();
-                } );
-                ds.then( 
-                    function(){ t = 0; },
-                    function(){ t-- }
-                );
-                ds.done( function(){
-                    t++;
-                } );
-                d1.resolved( 1 );
-                d2.rejected( 2 );
-                d3.resolved( 3 );
-                assert( t === 3, "检测是否能正确执行-6" );
-                d1 = new _Deferred();
-                d2 = new _Deferred();
-                d3 = new _Deferred();
-                t  = 0;
-                d1.then( function( v ){ t += v; }, function(){ } );
-                d2.then( function( v ){ t += v; }, function(){ } );
-                d3.then( function( v ){ t += v; }, function(){ } );
-                ds = new _DeferredList( d1, d2, d3 );
-                ds.then( 
-                    function(){ t++; },
-                    function(){ t--; }
-                );
-                ds.then( function( v, error, end ){
-                    error("error")
-                } );
-                ds.then( 
-                    function(){ t = 0; },
-                    function(){ t-- }
-                );
-                ds.done( function(){
-                    t++;
-                } );
-                d1.resolved( 1 );
-                d2.resolved( 2 );
-                d3.resolved( 3 );
-                assert( t === 6, "检测是否能正确执行-6" );
-            } )
-        );
-
-        //tools_unit.subUnit( "DeferredList" ).test();
-
-        gunit.append( tools_unit );
-        //tools_unit.test();
     }();
 
     /*
@@ -4644,15 +2708,12 @@
             LOCA_ROOT          = null,
             MODULE_FILE_EXT    = null,
             MODULE_ROOT        = null,
-            //state
-            //local
             Module             = null,
             ModuleCenter       = null,
             config             = {
                 debug       : false,
                 roots       : {}
             },
-            amd_unit = null,
             UID  = function(){
                 var uid = new Date().getTime();
                 return function(){
@@ -4809,7 +2870,6 @@
                         uri + " 模块由于未被准备好或该模块是一个不可用模块，导致无法被正常使用."
                     );
                 }
-
                 if( !module.exports ){
                     module.exports = {};
                 }
@@ -5454,30 +3514,7 @@
                 ModuleCenter.pending( main );
             }
         );
-        amd_unit = new _UTest(
-            "AMD", function( assert, deferred, next ){
-                var t = 0;
-                deferred();
-                function loaded( event ){
-                    t++;
-                }
-                ModuleCenter.on( "loaded", loaded );
-                _Use( _Modules( [ "./A", "./B" ] ), "", function( require ){
-                    assert( require( "A" ), "检测是否能正确执行-1" );
-                    assert( require( "A" ).name === "A", "检测是否能正确执行-2" );
-                    assert( require( "B" ), "检测是否能正确执行-3" );
-                    assert( require( "B" ).name === "B", "检测是否能正确执行-4" );
-                    assert( t === 3, "检测是否能正确执行-5" );
-                    ModuleCenter.un( "loaded", loaded );
-                    next();
-                } );
-            }
-        );
-        gunit.append( amd_unit );
-        //amd_unit.test();
     }();
-
-    
 
     GLOBAL.Cox            = Cox;
     GLOBAL.XObject        = Cox.XObject        = _XObject;
@@ -5496,7 +3533,6 @@
     GLOBAL.Single         = Cox.Single         = _Single;
     GLOBAL.Finaly         = Cox.Finlay         = _Finaly;
     GLOBAL.XFunction      = Cox.XFunction      = _XFunction;
-    GLOBAL.UTest          = Cox.UTest          = _UTest;
     GLOBAL.Deferred       = Cox.Deferred       = _Deferred;
     GLOBAL.DeferredList   = Cox.DeferredList   = _DeferredList;
     
@@ -5531,6 +3567,4 @@
     Cox.EventListener = _EventListener;
     Cox.EventSource   = _EventSource;
     
-
-    gunit.test( true );
 }();
