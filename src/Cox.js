@@ -61,13 +61,11 @@
         _XFunction            = null,
         _XString              = null,
         _XList                = null,
-        _XNumber              = null,
         _PlainObject          = null,
         _Null                 = null,
         _Type                 = null,
         _Util                 = null,
         _is                   = null,
-        _Limit                = null,
         _Nullable             = null,
         _Optional             = null,
         _Params               = null,
@@ -81,7 +79,6 @@
         _Single               = null,
         _Finaly               = null,
         _Class                = null,
-        _XClass               = null,
         _Event                = null,
         _EventListener        = null,
         _EventSource          = null,
@@ -3535,7 +3532,31 @@
     GLOBAL.XFunction      = Cox.XFunction      = _XFunction;
     GLOBAL.Deferred       = Cox.Deferred       = _Deferred;
     GLOBAL.DeferredList   = Cox.DeferredList   = _DeferredList;
-    
+
+    GLOBAL.forEach = Cox.forEach = _XFunction(
+        Array, Function, _Optional( Object ), _XList.forEach
+    );
+
+    GLOBAL.Iterator = Cox.Iterator = _Interface( "Iterator", null, function( Static, Public ){
+        Public.hasNext = Function;
+        Public.next    = Function;
+        Public.reset   = Function;
+    } );
+
+    GLOBAL.forEach.define(
+        Cox.Iterator, Function, _Optional( Object ) , function( iter, callback, thisp ){
+            while( iter.hasNext() ){
+                if( callback.call( thisp || null, iter.next(), iter ) === false ){
+                    break;
+                }
+            }
+        }
+    );
+
+    GLOBAL.forEach.define( 
+        Object, _Optional( Boolean, true ), Function, _Optional( Object ), _XObject.forEach
+    );
+
     GLOBAL.Class = Cox.Class = _XFunction(
         _Optional( String ), 
         _Optional( _ClassMode, _Entity ), 
@@ -3567,4 +3588,6 @@
     Cox.EventListener = _EventListener;
     Cox.EventSource   = _EventSource;
     
+
 }();
+

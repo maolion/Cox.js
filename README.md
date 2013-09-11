@@ -262,4 +262,3 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -   Version 1.0.0 
 -   Author 江宜玮 <maolion.j@gmail.com>
 -   Cox.js 技术支持 QQ群：259351004
-> <span style = "display:none;" >我是一个完美主义者，我想做的事情，我将竭尽所能的做好他。</span>
