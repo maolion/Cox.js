@@ -3401,6 +3401,39 @@
             this.setModules( this._uris, root );
         };
 
+        /**
+         * Modules.addRoot 添加添加根目录（或目录别名）
+         * @param { String } alias 目录别名
+         *   空字符 "" 为默认模块加载根目录
+         * @param { String } root 目录路径
+         */
+        _Modules.addRoot = function( alias, root ){
+            if( RE_URL_SIGN.test( root ) === false ){
+                if( root.charAt( 0 ) === "/" ){
+                    root = LOCA_ROOT + realpath( root );
+                }else{
+                    root = LOCA_ROOT + realpath( ( MODULE_ROOT + "/" + root ).replace( LOCA_ROOT, "" ) );
+                }
+            }
+            config.roots[ "~/" + alias ] = root;
+        };
+
+        /**
+         * Modules.removeRoot 删除某一根目录别名
+         * @param { String } alias
+         */
+        _Modules.removeRoot = function( alias ){
+            if( alias === "" ){
+                config.roots[ "~/" ] = MODULE_ROOT;
+            }else{
+                delete config.roots[ "~/" + alias ];                
+            }
+        };
+
+        _Modules.getRoot = function( alias ){
+            return config.roots[ "~/" + ( alias || "" ) ] || null;
+        };
+        
         _Modules.ModuleCenter = ModuleCenter;
 
         /**
@@ -3436,16 +3469,13 @@
                     //对象node.js平台
                     if( isNode ){
                         newmodule = ModuleCenter.findInCache( function( module, id ){
-                            if( cmodulename.test( id ) && !module.loaded ){
-                                newmodule = module;
-                                return false;
-                            }
+                            return cmodulename.test( stdSep( id ) ) && !module.loaded;
                         } );
 
                         if( newmodule ){
                             var root = dirname( newmodule.filename );
                             if( depend ){
-                                depend.setRoot( root );
+                                //depend.setRoot( root );
                                 _Use( depend, root, function( require, module ){
                                     define( require, module.exports, module );
                                     newmodule.exports = module.exports;
@@ -3587,7 +3617,8 @@
     Cox.Event         = _Event;
     Cox.EventListener = _EventListener;
     Cox.EventSource   = _EventSource;
-    
+        
+    _XObject.mix( GLOBAL.Modules, _Modules, true );
 
 }();
 
