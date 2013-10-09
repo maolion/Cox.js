@@ -1551,23 +1551,22 @@
          *      return sum + value;
          *  } );// 6
          */
-        _XList.reduce = function reduce( list, callback, sum, obj ){
+        _XList.reduce = function reduce( list, callback, value, obj ){
             var 
-                sum = ~~sum,
-                i   = 0,
-                l   = list.length 
+                i = 0,
+                l = list.length 
             ;
             if( arguments.length < 3 ){
                 if( l === 0 ){
                     return false;
                 }
-                sum = ~~list[ i++ ];
+                value = list[ i++ ];
             }
 
             for( ; i < l; i++ ){
-                sum = callback.call( obj, sum, list[i], i, list );
+                value = callback.call( obj, value, list[i], i, list );
             }
-            return sum;
+            return value;
         };
 
         /**
@@ -1647,7 +1646,7 @@
          * @param { Array } list
          * @return { Array }
          * @example
-         *  XList.shuffle( [ 1, 2, 3, 4, 5, 6, 7 ] );//返回任何可能的排列
+         *  XList.shuffle( [ 1, 2, 3, 4, 5, 6, 7 ] );
          */
         _XList.shuffle = function( list ){
             var 
@@ -2464,7 +2463,7 @@
                 main.__COX_XFUNCTION_OVERLOAD_LIST__ = [];
                 main.__COX_XFUNCTION_NAME__          = 
                 main.__COX_SIGN__                    = arguments[ arguments.length - 1 ].name
-                                                    || "anonymous";
+                                                    || "";
                 //为创建的函数添加需要被继承的一些方法
                 _XObject.mix( main, METHODS   , true );
                 //定义一个重载
@@ -4126,7 +4125,7 @@
                     _this._error = error;
                     _this.fireEvent( "stateChange", [ DSTATE_ERROR ] );
                     _this.fireEvent( "rejected", [ _this._value, error ] );
-                    _this.fireEvent( "done", [ _this._value, error ] );
+                    _this.fireEvent( "done", [ false, _this._value, error ] );
                     _this.getEvent( "resolved" ).stopPropagation();
                 }
             };
@@ -4164,7 +4163,7 @@
                     if( this._state === DSTATE_UNFULFILLED ){
                         this.addOnceEventListener( "done", callback );
                     }else{
-                        callback.call( this, this._value, this._error );
+                        callback.call( this, this._state === DSTATE_FULFILLED , this._value, this._error );
                     }
                 }
             );
@@ -4176,7 +4175,7 @@
             Public.resolved = function( value ){
                 var _this = this;
                 if( this._state !== DSTATE_UNFULFILLED ){
-                    throw new Error( "非法操作" );
+                    throw new Error( "非法操作:" );
                 }
 
                 this._state = DSTATE_FULFILLED;
@@ -4194,7 +4193,7 @@
                     ]
                 );
                 
-                !this._error && this.fireEvent( "done", [ value ] );
+                !this._error && this.fireEvent( "done", [ true, value ] );
             };
 
             /**
@@ -4203,7 +4202,11 @@
              */
             Public.rejected = function( value ){
                 if( this._state !== DSTATE_UNFULFILLED ){
-                    throw new Error( "非法操作" );
+                    if( value instanceof Error ){
+                        throw value;
+                    }else{
+                        throw new Error( "非法操作" );
+                    }
                 }
 
                 this._state = DSTATE_REJECTED;
@@ -4211,7 +4214,7 @@
 
                 this.fireEvent( "stateChange", [ DSTATE_REJECTED ] );
                 this.fireEvent( "rejected", [ value ] );
-                this.fireEvent( "done", [ value ] );
+                this.fireEvent( "done", [ false, value ] );
             };
 
             /**
@@ -4344,7 +4347,7 @@
                         t -= v;
                     }
                 );
-                d1.done( function( v ){
+                d1.done( function( o, v ){
                     t += v;
                 } );
                 d1.resolved( 10 );
@@ -4374,9 +4377,9 @@
                     }
 
                     if( deferredlist.length === 0 ){
-                        _this.getValue();
                         if( _this._rejected_list.length === 0 ){
                             _this._state = DSTATE_FULFILLED;
+                            _this.getValue();
                             _this.fireEvent( "stateChange", [ DSTATE_FULFILLED ] );
                             _this.fireEvent( 
                                 "resolved", 
@@ -4388,12 +4391,13 @@
                                     }
                                 ] 
                             );
-                            !_this._error && _this.fireEvent( "done", [ _this.value ] );
+                            !_this._error && _this.fireEvent( "done", [ true, _this._value ] );
                         }else{
                             _this._state = DSTATE_REJECTED;
+                            _this.getValue();
                             _this.fireEvent( "stateChange", [ DSTATE_REJECTED ] );
                             _this.fireEvent( "rejected", [ _this._value ] );
-                            _this.fireEvent( "done", [ _this._value ] );
+                            _this.fireEvent( "done", [ false, _this._value ] );
                         }
                     }
                 }
@@ -4682,7 +4686,7 @@
          */
         function realpath( path ){
             var n = 0;
-
+            root  = path.charAt(0) === "/" ? "/" : "";
             path  = stdSep( path );
             path  = path.split( "/" );
 
@@ -4699,7 +4703,7 @@
 
             path.length = n;
             path.unshift( "" );
-            return path.join("/");
+            return root + path.join("/");
         }
 
         /**
@@ -4812,9 +4816,10 @@
                 if( typeof module.define !== "function" ){
                     return module.exports;
                 }
+
                 define = module.define;
                 delete module.define;
-
+                module.__define = define;
                 //调用模块的定义体
                 define( 
                     _require( module ),
@@ -4841,68 +4846,96 @@
 
             //模块加载器
             load = [
-                function( module ){
+                !isNode && function(){
+                    //浏览器
                     var 
-                        loader   = document.createElement( "script" ),
-                        url      = module.url
+                        DOC       = document,
+                        docReady  = new _Deferred()
                     ;
+                    
+                    function load( module ){
+                        var 
+                            loader   = document.createElement( "script" ),
+                            url      = module.url
+                        ;
 
-                    if( !url ){
-                        return ;
-                    }
+                        if( !url ){
+                            return ;
+                        }
 
-                    loader.setAttribute( "type"   , "text/javascript" );
-                    loader.setAttribute( "charset", "utf-8"  );
-                    loader.setAttribute( "async"  , "true" );
-                    loader.setAttribute( "defer"  , "true" );
-                    loader.setAttribute( "src"    , url );
+                        if( loader.addEventListener ){
+                            loader.addEventListener( "load", loaded, false );
+                            loader.addEventListener( "error", loadfail, false );
+                        }else{
+                            loader.attachEvent( "onreadystatechange", loaded );
+                        }
 
-                    if( loader.addEventListener ){
-                        loader.addEventListener( "load", loaded, true );
-                        loader.addEventListener( "error", loadfail, true );
-                    }else{
-                        loader.attachEvent( "onreadystatechange", loaded );
-                    }
-                                        
-                    REL.firstChild.insertBefore( loader, null );
+                        loader.setAttribute( "type"   , "text/javascript" );
+                        loader.setAttribute( "charset", "utf-8"  );
+                        loader.setAttribute( "async"  , "true" );
+                        loader.setAttribute( "defer"  , "true" );
+                        loader.setAttribute( "src"    , url );
 
-                    function loaded(){ 
-                        if( loader.addEventListener 
-                         || loader.readyState === "loaded" 
-                         || loader.readyState === "complete" 
-                        ){
+                        REL.firstChild.insertBefore( loader, null );
 
+                        function loaded(){ 
+                            if( loader.addEventListener 
+                             || loader.readyState === "loaded" 
+                             || loader.readyState === "complete" 
+                            ){
+                                delete loading_modules[ module.id ];
+                                loaded_modules[ module.id ] = module;
+                                if( !module.loaded.isDone() ){
+                                    //console.log( module );
+                                    module.loaded.resolved();
+                                    module.resolved();
+                                }
+
+                                if( loader.removeEventListener ){
+                                    loader.removeEventListener( "load", loaded, false );
+                                    loader.removeEventListener( "error", loaded, false );
+                                }else{
+                                    loader.detachEvent( "onreadystatechange", loaded );
+                                }
+                            }
+                        }
+
+                        function loadfail(){
                             delete loading_modules[ module.id ];
-                            loaded_modules[ module.id ] = module;
-                            
-                            if( !module.loaded.isDone() ){
-                                module.loaded.resolved();
-                            }
-
-                            if( module.isEmpty() ){
-                                module.resolved();
-                            }
 
                             if( loader.removeEventListener ){
-                                loader.removeEventListener( "load", loaded );
+                                loader.removeEventListener( "load", loaded, false );
+                                loader.removeEventListener( "error", loadfail, false );
                             }else{
                                 loader.detachEvent( "onreadystatechange", loaded );
+                                loader.detachEvent( "error", loadfail );
                             }
-                        }
+
+                            module.loaded.rejected();
+                        }                
                     }
 
-                    function loadfail(){
-                        delete loading_modules[ module.id ];
+                    //安全起见，让所有需要加载的模块在等到浏览器文档加载完毕时在加载
+                    if( DOC.addEventListener ){
+                        DOC.addEventListener( "DOMContentLoaded", function(){
+                            DOC.removeEventListener( "DOMContentLoaded", arguments.callee, false );
+                            docReady.resolved();
+                        }, false );
+                    }else{
+                        DOC.attachEvent( "onreadystatechange", function(){
+                            if( /^c/.test( DOC.readyState ) ){
+                                DOC.detachEvent( "onreadystatechange", arguments.callee );
+                                docReady.resolved();
+                            }
+                        } );
+                    }
 
-                        if( loader.removeEventListener ){
-                            loader.removeEventListener( "error", loadfail );
-                        }
-
-                        //console.warn( "load fail:", module.url );
-                        module.loaded.rejected();
-                        module.rejected();
-                    }                
-                },
+                    return function( module ){
+                        docReady.then( function(){
+                            load( module );
+                        } );
+                    };
+                }(),
                 function( module ){
                     var exports = null;
 
@@ -4949,33 +4982,38 @@
                 //关联依赖链
                 function link( module, dmodule, pending ){
                     var 
-                        dmodules = dmodule.depend && dmodule.depend.modules
+                        dmodules = dmodule.depend && dmodule.depend.modules,
+                        pmodules = []
                     ;
                     //将每一个依赖模块的依赖模块关联到指定模块上
                     dmodules && _XObject.forEach( dmodules, true, function( dm, id ){
-                        id = dm.id;
-
+                        dm             = ModuleCenter.getModule( dm.id ) || dm;
+                        dmodules[ id ] = dm;
+                        id             = dm.id;
                         if( id !== module.id
                          && !( pending.list[ id ] instanceof Module )
                         ){
                             pending.list[ id ] = dm;
                             pending.length++;
-                            dm.loaded.then(
-                                function(){
-                                    pending.length--;
-                                    link( module, dm, pending );
-                                },
-                                function( value ){
-                                    module.rejected( value );
-                                }
-                            );
+                            pmodules.push( dm );
                         }
+                    } );
+
+                    pmodules.length && _XList.forEach( pmodules, function( pm ){
+                        pm.loaded.then(
+                            function(){
+                                pending.length--;
+                                link( module, pm, pending );
+                            },
+                            function( value ){
+                                module.rejected( value );
+                            }
+                        );
                     } );
 
                     //当所有依赖模块被准备完毕之时
                     if( pending.length === 0 && pending.wait === null ){
                         pending.wait = 1;
-
                         if( module.isMain() ){
                             //这样做目的只是为了缺位确保入口模块能在所有依赖模
                             //块完成之后才被调用，确保逻辑正确性
@@ -5015,39 +5053,39 @@
 
                     pending_modules[ module.uid ] = pending;
 
+                    module.done( function(){
+                        delete pending_modules[ module.uid ];
+                    } );
+
                     //加载需要被加载的依赖模块
                     if( module.depend && module.depend.modules ){
                         _XObject.forEach( module.depend.modules, true, function( dmodule, id ){
 
                             if( ModuleCenter.exists( dmodule ) ){
-                                module.depend.modules[ id ] = ModuleCenter.getModule( dmodule.id );
-                                return ;
+                                module.depend.modules[ id ] = dmodule =  ModuleCenter.getModule( dmodule.id );
+                            }else{
+                                dmodule.__COX_MODULE_MAIN__   = module.__COX_MODULE_MAIN__ || module;
+                                loading_modules[ dmodule.id ] = dmodule;
+                                load( dmodule );
+                                eloading.target = dmodule;
+                                ModuleCenter.fireEvent( "loading", [ eloading ] );
+                                dmodule.loaded.then(
+                                    function(){
+                                        eloaded.target = dmodule;
+                                        ModuleCenter.fireEvent( "loaded", [ eloaded ] );
+                                    },
+                                    function(){
+                                        eerror.target = dmodule;
+                                        ModuleCenter.fireEvent( "eerror", [ eerror ] );
+                                    }
+                                );
                             }
-
-                            dmodule.__COX_MODULE_MAIN__   = module.__COX_MODULE_MAIN__ || module;
-                            loading_modules[ dmodule.id ] = dmodule;
-                            load( dmodule );
-
-                            eloading.target = dmodule;
-                            ModuleCenter.fireEvent( "loading", [ eloading ] );
-
-                            dmodule.loaded.then(
-                                function(){
-                                    eloaded.target = dmodule;
-                                    ModuleCenter.fireEvent( "loaded", [ eloaded ] );
-                                },
-                                function(){
-                                    eerror.target = dmodule;
-                                    ModuleCenter.fireEvent( "eerror", [ eerror ] );
-                                }
-                            );
                         } );
                     }
 
                     link( module, module, pending );
                 };
             }();
-
             /**
              * @method exists 检测某一模块是否被包含在模块管理中心里
              * @param { Module } module
@@ -5397,12 +5435,10 @@
                 if( !define ){
                     throw new Error( "需要一个Function类型实例来完成模块的定义" );
                 }
-
                 newmodule = ModuleCenter.findInLoading( modulename ) 
                          || ModuleCenter.findInLoading( function( module, id ){
                             return cmodulename.test( id );
                          } );
-
                 if( !newmodule ){
                     //对象node.js平台
                     if( isNode ){
@@ -5448,13 +5484,12 @@
                 ModuleCenter.pending( newmodule );
             }
         );
-        
         /**
          * Use 使用外部的模块
          * @param { Modules } modules 外部模块列表
          * @param { String } root 模块加载的目录
          * @param { Function } handler 处理程序
-         */        
+         */ 
         _Use = _KeyWord(
             "Use", _KeyWord.TOOL, function( modules, root, handler ){
                 var main = null;
@@ -5469,31 +5504,27 @@
                 }
 
                 main = new Module( "", "", modules );
-
                 main.then( function(){
                     handler( _require( main ), main )
                 } );
                 main.__COX_MODULE_MAIN__ = main;
                 main.loaded.resolved();
+
                 //将模块挂到模块中心里，完成依赖模块的加载
                 ModuleCenter.pending( main );
+                return main;
             }
         );
+
         amd_unit = new _UTest(
             "AMD", function( assert, deferred, next ){
                 var t = 0;
                 deferred();
-                function loaded( event ){
-                    t++;
-                }
-                ModuleCenter.on( "loaded", loaded );
                 _Use( _Modules( [ "./A", "./B" ] ), "", function( require ){
                     assert( require( "A" ), "检测是否能正确执行-1" );
                     assert( require( "A" ).name === "A", "检测是否能正确执行-2" );
                     assert( require( "B" ), "检测是否能正确执行-3" );
                     assert( require( "B" ).name === "B", "检测是否能正确执行-4" );
-                    assert( t === 3, "检测是否能正确执行-5" );
-                    ModuleCenter.un( "loaded", loaded );
                     next();
                 } );
             }
@@ -5519,7 +5550,7 @@
     GLOBAL.Extends        = Cox.Extends        = _Extends;
     GLOBAL.Abstract       = Cox.Abstract       = _Abstract;
     GLOBAL.Single         = Cox.Single         = _Single;
-    GLOBAL.Finaly         = Cox.Finlay         = _Finaly;
+    GLOBAL.Finaly         = Cox.Finaly         = _Finaly;
     GLOBAL.XFunction      = Cox.XFunction      = _XFunction;
     GLOBAL.UTest          = Cox.UTest          = _UTest;
     GLOBAL.Deferred       = Cox.Deferred       = _Deferred;
@@ -5530,9 +5561,9 @@
     );
 
     GLOBAL.Iterator = Cox.Iterator = _Interface( "Iterator", null, function( Static, Public ){
-        Public.hasNext = Function;
-        Public.next    = Function;
-        Public.reset   = Function;
+        Public.hasNext  = Function;
+        Public.next     = Function;
+        Public.reset    = Function;
     } );
 
     GLOBAL.forEach.define(
@@ -5574,13 +5605,18 @@
         Array, _Modules
     );
 
+
     GLOBAL.Depend     = Cox.Modules;
-    GLOBAL.Use        = _XFunction( _Modules, _Optional( String ), Function, _Use );
+    GLOBAL.Use        = Cox.Use = _XFunction( _Modules, _Optional( String ), Function, _Use );
     Cox.Event         = _Event;
     Cox.EventListener = _EventListener;
     Cox.EventSource   = _EventSource;
-    
+    Cox.PlainObject   = _PlainObject;    
+    Cox.ownDocument   = GLOBAL.document;
+    Cox.ownWindow     = GLOBAL;
     _XObject.mix( GLOBAL.Modules, _Modules, true );
     
+    typeof exports !== "undefined" && ( module.exports = Cox );
+
     gunit.test( true );
 }();
