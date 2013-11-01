@@ -1,5 +1,5 @@
 /**
- * #${project}
+ * #Cox.js
  * ----------------------------------------------------------------------------
  * Cox.js 它是在标准原生 JavaScript 基础之上对 JavaScript 使用的扩展
  *  
@@ -30,9 +30,10 @@
  *
  * ----------------------------------------------------------------------------
  *
- * -   Date ${MDATE}
- * -   Version ${version} 
- * -   Author ${author}
+ * -   Date 2013/11/1
+ * -   Version v1.1
+ * -   Author maolion.j@gmail.com
+ * -   website http://maolion.com
  *
  */
 
@@ -53,9 +54,8 @@
         undefined             = void 0,
         isNode                = typeof require === "function" && global.require !== require,
         isBrowser             = typeof window === "object"  && window === GLOBAL,
-        Cox                   = { VERSION : "1.0.0" },
+        Cox                   = { VERSION : "1.1.0" },
         newObject             = null,
-        gunit                 = null,
         //主要功能模块（对外接口）
         _KeyWord              = null,
         _XObject              = null,
@@ -99,7 +99,8 @@
             return new co_bridge;
         }
     }());
-    
+
+
     //创建对象工厂类
     function ObjectFactory( factory, extend ){
         var 
@@ -242,22 +243,25 @@
             return true;
         };
 
+    
     }();
-    //gunit.subUnit( "KeyWord" ).test();
 
     /*
      * 提供了一套常用的基础工具组件
      */
     void function __IMPLEMENT_UTIL__(){
         var 
-            CANNOT_ENUM_PROPERTYS = -[1,] && [] || [
-                "toString",
-                "toLocalString",
-                "valueOf",
+            CANNOT_ENUM_PROPERTYS = !(GLOBAL.ActiveXObject && GLOBAL.document && ~~GLOBAL.document.documentMode <= 8) && [] || [
                 "constructor",
-                "propertyIsEnumerable",
+                "toString",
+                "valueOf",
+                "toLocaleString",
+                "prototype",
                 "isPrototypeOf",
-                "hasOwnProperty"
+                "propertyIsEnumerable",
+                "hasOwnProperty",
+                "length",
+                "unique"
             ],
             SPECIAL_CHARS         = {
                 '\b' : '\\b',
@@ -370,30 +374,46 @@
          *      //...
          *  } );
          */
-        _XObject.forEach = function( obj, onlyself, callback, thisp ){
-            onlyself = !!onlyself;
-            for( var key in obj ){
-                if( onlyself && !obj.hasOwnProperty( key ) ){
-                    continue;
+        _XObject.forEach = [
+            function (obj, onlyself, callback, thisp)
+            {
+                onlyself = !!onlyself;
+                for( var key in obj ){
+                    if( onlyself && !obj.hasOwnProperty( key ) ){
+                        continue;
+                    }
+                    if( callback.call( thisp, obj[ key ], key, obj ) === false ){
+                        break;
+                    }
                 }
-                if( callback.call( thisp, obj[ key ], key, obj ) === false ){
-                    break;
+            },
+            function (obj, onlyself, callback, thisp)
+            {
+                var props = {};
+                onlyself = !!onlyself;
+                for( var key in obj ){
+                    if( onlyself && !obj.hasOwnProperty( key ) ){
+                        continue;
+                    }
+                    props["__"+key] = obj;
+                    if( callback.call( thisp, obj[ key ], key, obj ) === false ){
+                        break;
+                    }
                 }
+                //for...in 在IE8- 的环境中无法枚举出已被标记为 dontEnum 的成员
+                //dontEnum，即 obj.propertyIsEnumerable( key ) === false
+                for ( var i = CANNOT_ENUM_PROPERTYS.length - 1, key; i >= 0; i-- ) {
+                    key = CANNOT_ENUM_PROPERTYS[ i ];
+                    if ( obj.hasOwnProperty(key)
+                      && props["__"+key] !== obj
+                      && callback.call(thisp, obj[key], key, obj) === false
+                    ) {
+                        break;
+                    }
+                }                
             }
+        ][CANNOT_ENUM_PROPERTYS.length ? 1 : 0];
 
-            //for...in 在IE8- 的环境中无法枚举出已被标记为 dontEnum 的成员
-            //dontEnum，即 obj.propertyIsEnumerable( key ) === false
-            for( var i = CANNOT_ENUM_PROPERTYS.length - 1, key; i >= 0; i-- ){
-                key = CANNOT_ENUM_PROPERTYS[ i ];
-                if( onlyself && !obj.hasOwnProperty( key ) ){
-                    continue;
-                }
-                if( callback.call( thisp, obj[ key ], key, obj ) === false ){
-                    break;
-                }
-            }
-
-        };
 
         /**
          * XObject.mix 将某一对象上的成员混合到另一对象上(对另一对象的扩展)
@@ -455,6 +475,24 @@
             } );
             return keys;
         };
+
+        /*
+        /**
+         * XObject.__instancelike__ 判断某一对象是否能被“看作”为XObject的实
+         * 例（除null和undefined外所有类实例都可被看作是 XObject 的实例 )
+         * @param { Object } obj
+         * @return { Boolean }
+        * /
+        _XObject.__instancelike__ = function( obj ){
+            if( obj === null || obj === undefined ){
+                return false;
+            }
+            if( obj instanceof _XObject ){
+
+            }
+            return noextend ? obj.constructor === Object  : true;
+        };
+        */
 
         /**
          * XString 提供一些用于操作字符串数据的一些静态方法集，通过 XString构
@@ -963,7 +1001,7 @@
      */
     void function __IMPLEMENT_XFUNCTION__(){
         
-        var 
+        var
             ParamTypeModifier = null,
             METHODS           = null
         ;
@@ -978,7 +1016,6 @@
                 return obj === this;
             }
         };
-
 
         //参数参数类型修饰符
 
@@ -1256,7 +1293,6 @@
         _ParamTypeTable.prototype.toString = function toString(){
             return this.__COX_SIGN__;
         };
-
         METHODS    = {
             /**
              * define 定义重载
@@ -1419,9 +1455,7 @@
             return function(){
                 var 
                     args = SLICE.call( arguments ),
-                    //= = 知道嘛我写这东西 IE8- 都不在考虑范围 一直是, 
-                    //不爽 过来B4我呀，你B4我呀
-                    key  = JSON.stringify( args )   
+                    key  = args.toString();
                 ;
                 if( memoize.hasOwnProperty( key ) ){
                     return memoize[ key ];
@@ -1432,8 +1466,7 @@
 
         };
     }();
-
-
+    
     /*
       面向对象工具
       面向对象是一种对现实世界理解和抽象的方法，通过面向对象的方式，将现世界
@@ -1443,7 +1476,7 @@
       灵活性和扩展性。
      */
     void function __IMPLEMENT_OOP__(){
-        var 
+        var
             BaseClass = null,
             ClassMode = null
         ;
@@ -1482,6 +1515,7 @@
          * 处理器被调用时会有两个参数对象被传入，第一个参数对象接受类方法的
          * 定义，第二个参数对象接受类实例方法的定义
          */
+         //InterfaceImplement
         _Interface = _KeyWord(
             "Interface", _KeyWord.DATATYPE, ObjectFactory( function Interface( name, extend, define ){
                 var 
@@ -1534,10 +1568,11 @@
                                 return;
                             }else if( method instanceof Array ){
                                 for( var i = 0, l = method.length; i < l; i++ ){
-                                    if( !( method instanceof _ParamTypeTable ) ){
-                                        return;        
+                                    if (!( method[i] instanceof _ParamTypeTable )) {
+                                        throw new TypeError( "无效的接口定义" );
                                     }
                                 }
+                                return;
                             }
                             throw new TypeError( "无效的接口定义" );
                         }
@@ -1822,10 +1857,10 @@
             }
 
             delete newclass.constructor;
+            newclass.prototype = proto;
             newclass.implementIn = function( obj ){
                 return _Abstract.implementIn( newclass, obj );
             }
-            newclass.prototype = proto;
         };
 
         _Single = _ClassMode( "Single" );
@@ -1926,11 +1961,12 @@
                 _Abstract.implementIn( _super, newclass );
             }*/
             
+            newclass.prototype = proto;
+
             for( var i = 0, l = classinfo.IMPLEMENTS.length; i < l; i++ ){
                 classinfo.IMPLEMENTS[i].implementIn( newclass );
             }
 
-            newclass.prototype = proto;
         };
 
         /**
@@ -2171,9 +2207,9 @@
                 return newclass;
             }
         );
-
     }();
 
+    
     void function __IMPLEMENT_TOOLS__(){
         var 
             DSTATE_UNFULFILLED = 0,
@@ -2256,13 +2292,11 @@
                     }
                 }
             }
-
-            Public.break = function(){
+            Public.cancle = function(){
                 this._processing.length = 0;
             };
 
         } );
-        
         
         _Class( "Event", _Entity, null, _Implements( IEvent ), function( Static, Public ){
             _Event = this;
@@ -2275,7 +2309,7 @@
             )
 
             Public.stopPropagation = function(){
-                this.listener.break();
+                this.listener.cancle();
             };
         } );
 
@@ -2684,7 +2718,7 @@
             };
 
         } );
-        
+
     }();
 
     /*
@@ -2719,7 +2753,6 @@
                 debug       : false,
                 roots       : {}
             },
-            amd_unit = null,
             UID  = function(){
                 var uid = new Date().getTime();
                 return function(){
@@ -3583,7 +3616,6 @@
                 return main;
             }
         );
-
     }();
 
     
@@ -3667,6 +3699,6 @@
     Cox.ownDocument   = GLOBAL.document;
     Cox.ownWindow     = GLOBAL;
     _XObject.mix( GLOBAL.Modules, _Modules, true );
+    
     typeof exports !== "undefined" && ( module.exports = Cox );
-
 }();

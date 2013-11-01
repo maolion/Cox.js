@@ -1,5 +1,5 @@
 /**
- * #${project}
+ * #Cox.js
  * ----------------------------------------------------------------------------
  * Cox.js 它是在标准原生 JavaScript 基础之上对 JavaScript 使用的扩展
  *  
@@ -30,9 +30,10 @@
  *
  * ----------------------------------------------------------------------------
  *
- * -   Date ${MDATE}
- * -   Version ${version} 
- * -   Author ${author}
+ * -   Date 2013/11/1
+ * -   Version v1.1
+ * -   Author maolion.j@gmail.com
+ * -   website http://maolion.com
  *
  */
 
@@ -53,7 +54,7 @@
         undefined             = void 0,
         isNode                = typeof require === "function" && global.require !== require,
         isBrowser             = typeof window === "object"  && window === GLOBAL,
-        Cox                   = { VERSION : "1.0.0" },
+        Cox                   = { VERSION : "1.1.0" },
         newObject             = null,
         gunit                 = null,
         //主要功能模块（对外接口）
@@ -760,14 +761,17 @@
     void function __IMPLEMENT_UTIL__(){
         var 
             util_unit             = new _UTest( "Util" ),
-            CANNOT_ENUM_PROPERTYS = -[1,] && [] || [
-                "toString",
-                "toLocalString",
-                "valueOf",
+            CANNOT_ENUM_PROPERTYS = !(GLOBAL.ActiveXObject && GLOBAL.document && ~~GLOBAL.document.documentMode <= 8) && [] || [
                 "constructor",
-                "propertyIsEnumerable",
+                "toString",
+                "valueOf",
+                "toLocaleString",
+                "prototype",
                 "isPrototypeOf",
-                "hasOwnProperty"
+                "propertyIsEnumerable",
+                "hasOwnProperty",
+                "length",
+                "unique"
             ],
             SPECIAL_CHARS         = {
                 '\b' : '\\b',
@@ -918,30 +922,46 @@
          *      //...
          *  } );
          */
-        _XObject.forEach = function( obj, onlyself, callback, thisp ){
-            onlyself = !!onlyself;
-            for( var key in obj ){
-                if( onlyself && !obj.hasOwnProperty( key ) ){
-                    continue;
+        _XObject.forEach = [
+            function (obj, onlyself, callback, thisp)
+            {
+                onlyself = !!onlyself;
+                for( var key in obj ){
+                    if( onlyself && !obj.hasOwnProperty( key ) ){
+                        continue;
+                    }
+                    if( callback.call( thisp, obj[ key ], key, obj ) === false ){
+                        break;
+                    }
                 }
-                if( callback.call( thisp, obj[ key ], key, obj ) === false ){
-                    break;
+            },
+            function (obj, onlyself, callback, thisp)
+            {
+                var props = {};
+                onlyself = !!onlyself;
+                for( var key in obj ){
+                    if( onlyself && !obj.hasOwnProperty( key ) ){
+                        continue;
+                    }
+                    props["__"+key] = obj;
+                    if( callback.call( thisp, obj[ key ], key, obj ) === false ){
+                        break;
+                    }
                 }
+                //for...in 在IE8- 的环境中无法枚举出已被标记为 dontEnum 的成员
+                //dontEnum，即 obj.propertyIsEnumerable( key ) === false
+                for ( var i = CANNOT_ENUM_PROPERTYS.length - 1, key; i >= 0; i-- ) {
+                    key = CANNOT_ENUM_PROPERTYS[ i ];
+                    if ( obj.hasOwnProperty(key)
+                      && props["__"+key] !== obj
+                      && callback.call(thisp, obj[key], key, obj) === false
+                    ) {
+                        break;
+                    }
+                }                
             }
+        ][CANNOT_ENUM_PROPERTYS.length ? 1 : 0];
 
-            //for...in 在IE8- 的环境中无法枚举出已被标记为 dontEnum 的成员
-            //dontEnum，即 obj.propertyIsEnumerable( key ) === false
-            for( var i = CANNOT_ENUM_PROPERTYS.length - 1, key; i >= 0; i-- ){
-                key = CANNOT_ENUM_PROPERTYS[ i ];
-                if( onlyself && !obj.hasOwnProperty( key ) ){
-                    continue;
-                }
-                if( callback.call( thisp, obj[ key ], key, obj ) === false ){
-                    break;
-                }
-            }
-
-        };
 
         /**
          * XObject.mix 将某一对象上的成员混合到另一对象上(对另一对象的扩展)
@@ -1048,16 +1068,39 @@
             new _UTest( "forEach", function( assert ){
                 var 
                     obj  = null,
-                    test = null
+                    test = ""
                 ;
 
-                obj = { toString : "123" };
+                obj = {
+                    constructor          : function() { return "0"; },
+                    toString             : function() { return "1"; },
+                    valueOf              : function() { return "2"; },
+                    toLocaleString       : function() { return "3"; },
+                    prototype            : function() { return "4"; },
+                    isPrototypeOf        : function() { return "5"; },
+                    propertyIsEnumerable : function() { return "6"; },
+                    hasOwnProperty       : function() { return "7"; },
+                    length               : function() { return "8"; },
+                    unique               : function() { return "9" }
+                };
 
-                _XObject.forEach( obj, true, function( v ){
-                    test = v;
+                //console.log(GLOBAL.document.documentMode);
+                //console.log( (GLOBAL.ActiveXObject && GLOBAL.document && ~~GLOBAL.document.documentMode <= 8) );
+                _XObject.forEach( obj, true, function( v, k ){
+                    test += v();
                 } );
-                assert( test === "123", "检测是否能枚举遍历对象成员列表" );
 
+                assert( test.split("").sort().join("") === "0123456789", "检测是否能枚举遍历对象成员列表" );
+                obj = {
+                    a : 10,
+                    b : 20
+                };
+                test = 0;
+                _XObject.forEach( obj, true, function( v, k ){
+                    test += v;
+                } );
+                assert( test === 30, "检测是否能枚举遍历对象成员列表" );
+                /*
                 obj = function(){
                     this.toString = 222;
                 }
@@ -1065,9 +1108,11 @@
 
                 test = 0;
                 _XObject.forEach( new obj, false, function( v, key ){
+                    console.log(":::", key);
                     test += v;
                 } );
-                assert( test === 333, "检测是否能枚举对象原型链中的成员列表" );
+                console.log( test );
+                assert( test === 333, "检测是否能枚举对象原型链中的成员列表" );*/
             } ) 
         );
 
@@ -2510,9 +2555,7 @@
             return function(){
                 var 
                     args = SLICE.call( arguments ),
-                    //= = 知道嘛我写这东西 IE8- 都不在考虑范围 一直是, 
-                    //不爽 过来B4我呀，你B4我呀
-                    key  = JSON.stringify( args )   
+                    key  = args.toString();
                 ;
                 if( memoize.hasOwnProperty( key ) ){
                     return memoize[ key ];
@@ -2614,8 +2657,7 @@
         //XFunction_unit.test();
 
     }();
-
-
+    
     /*
       面向对象工具
       面向对象是一种对现实世界理解和抽象的方法，通过面向对象的方式，将现世界
@@ -2675,6 +2717,7 @@
          * 处理器被调用时会有两个参数对象被传入，第一个参数对象接受类方法的
          * 定义，第二个参数对象接受类实例方法的定义
          */
+         //InterfaceImplement
         _Interface = _KeyWord(
             "Interface", _KeyWord.DATATYPE, ObjectFactory( function Interface( name, extend, define ){
                 var 
@@ -2727,10 +2770,11 @@
                                 return;
                             }else if( method instanceof Array ){
                                 for( var i = 0, l = method.length; i < l; i++ ){
-                                    if( !( method instanceof _ParamTypeTable ) ){
-                                        return;        
+                                    if (!( method[i] instanceof _ParamTypeTable )) {
+                                        throw new TypeError( "无效的接口定义" );
                                     }
                                 }
+                                return;
                             }
                             throw new TypeError( "无效的接口定义" );
                         }
@@ -2865,7 +2909,7 @@
         _Interface.prototype.toString = function toString(){
             return this.__COX_SIGN__;
         };
-
+        //InterfaceUnit
         oop_unit.append(
             new _UTest( "Interface", function( assert ){
                 var 
@@ -2879,7 +2923,7 @@
                         Public.m2 = [
                             _ParamTypeTable( ),
                             _ParamTypeTable( String ),
-                            _ParamTypeTable( String, Boolean, String ),
+                            _ParamTypeTable( String, Boolean, String )
                         ];
                     } ),
 
@@ -3103,10 +3147,10 @@
             }
 
             delete newclass.constructor;
+            newclass.prototype = proto;
             newclass.implementIn = function( obj ){
                 return _Abstract.implementIn( newclass, obj );
             }
-            newclass.prototype = proto;
         };
 
         _Single = _ClassMode( "Single" );
@@ -3207,11 +3251,12 @@
                 _Abstract.implementIn( _super, newclass );
             }*/
             
+            newclass.prototype = proto;
+
             for( var i = 0, l = classinfo.IMPLEMENTS.length; i < l; i++ ){
                 classinfo.IMPLEMENTS[i].implementIn( newclass );
             }
 
-            newclass.prototype = proto;
         };
 
         /**
@@ -3637,6 +3682,7 @@
 
         oop_unit.append(
             new _UTest( "Class.Implements", function ( assert ){
+
                 var 
                     IA1 = _Interface( "IA1", null, function IA1( Static, Public ){
 
@@ -3657,6 +3703,7 @@
                     } ),
                     C1 = _Class( "C1", _Entity, null, _Implements( IA1, IA3 ), function C1( Static, Public ){
                         Static.m1 = function(){};
+
                         Public.constructor = _XFunction( Boolean, function(){
                             //...
                         } );
@@ -3686,6 +3733,7 @@
                 assert( IA1.implementIn( C1 ) , "检测是否能正确执行-10" );
                 assert( IA2.implementIn( C1 ) , "检测是否能正确执行-11" );
                 assert( IA3.implementIn( C1 ) , "检测是否能正确执行-12" );
+
                 assert( C1.implemented( IA4 ) === false , "检测是否能正确执行-13" );
                 assert( IA4.implementIn( C1 ) , "检测是否能正确执行-14" );
                 assert( new C1( true ).instanceOf( IA1 ), "检测是否能正确执行-15" );
@@ -3724,6 +3772,7 @@
                     C2 = null,
                     t  = null
                 ;
+
                 assert( C1 instanceof Function, "检测是否正确执行-1" );
                 assert( C1.implemented( I1 ), "检测是否能正确执行-2" );
                 assert( C1.implemented( I2 ), "检测是否能正确执行-3" );
@@ -3752,6 +3801,7 @@
         //oop_unit.test();
     }();
 
+    
     void function __IMPLEMENT_TOOLS__(){
         var 
             tools_unit         = new _UTest( "Tools" ),
@@ -3835,8 +3885,7 @@
                     }
                 }
             }
-
-            Public.break = function(){
+            Public.cancle = function(){
                 this._processing.length = 0;
             };
 
@@ -3885,7 +3934,7 @@
             )
 
             Public.stopPropagation = function(){
-                this.listener.break();
+                this.listener.cancle();
             };
         } );
 
