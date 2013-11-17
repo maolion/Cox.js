@@ -105,24 +105,29 @@ Define( "XMLHttpRequest", Depend( "~/Cox/Env", "~/Cox/Net/URL", "~/Cox/Net/URI" 
                 if( status >= 400 ){
                     error = new Error( status + " " + xhr.statusText );
                 }else if( status !== 200 || status !== 304 ){
-                    try{
-                        var 
-                            data  = null,
-                            type  = xhr.responseType,
-                            parse = dataParses[ type ]
-                        ;
-                        xhr.response        = gallery.response;
-                        xhr.responseText    = gallery.responseText;
-                        xhr.responseXML     = type === RES_TYPE_XML && gallery.responseXML;
-                        event               = xhr.getEvent( "load" );
-                        event.originalXHR   = gallery;
-                        event.originalEvent = oevent;
-                        data = xhr.response || xhr.responseXML || xhr.responseText;
-                        data = parse instanceof Function ? parse( data ) : data;
-                        xhr.fireEvent( "load", [ event, data ] );
-                    }catch( e ){
+                    var 
+                        data  = null,
+                        type  = xhr.responseType,
+                        parse = dataParses[type]
+                    ;
+                    event               = xhr.getEvent( "load" );
+                    event.originalXHR   = gallery;
+                    event.originalEvent = oevent;
+
+                    try {
+                        data = xhr.response     = gallery.response;
+                        data = xhr.responseText = gallery.responseText;
+                        if (type === RES_TYPE_XML)
+                            data = xhr.responseXML  = gallery.responseXML;
+                        data || (data = xhr.responseText);
+                    } catch(e) {
+                    }
+                    try {
+                        data = parse instanceof Function ? parse(data) : data;
+                    } catch(e) {
                         error = e;
                     }
+                    xhr.fireEvent( "load", [ event, data ] );
                 }
 
                 if( error ){

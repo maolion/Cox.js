@@ -21,30 +21,27 @@ Define( "Env", function( _require, Env, module ){
         version     = "unknow",
         undefined   = void 0
     ;
-
-    if( GLOBAL.ActiveXObject ){
+    if( "ActiveXObject" in GLOBAL ){
         name    = "ie";
-        version = UA.match( /ie ([\d.]+)/ )[1];
+        version = (UA.match( /ie ([\d.]+)/ ) || UA.match(/trident.*rv:([\d.]+)/))[1];
     }else if( DOC.getBoxObjectFor || DOC.getBindingParent ){
         name    = "firefox";
         version = UA.match( /firefox\/([\d.]+)/ )[1];
     }else if( GLOBAL.opera ){
         name    = "opera";
         version = UA.match( /opera.([\d.]+)/ )[1];
-    }else if( 
-        GLOBAL.chrome || 
-        ( GLOBAL.MessageEvent && !DOC.getBoxObjectFor ) 
+    }else if( !GLOBAL.chrome && GLOBAL.openDatabase ){
+        name    = "safari";
+        version = (UA.match( /version\/([\d.]+)/ )||[])[1];
+    }else if( GLOBAL.chrome 
+           || ( GLOBAL.MessageEvent && !DOC.getBoxObjectFor )
     ){
         name    = "chrome";
         version = UA.match( /chrome\/([\d.]+)/ )[1];
-    }else if( GLOBAL.openDataBase ){
-        name    = "safari";
-        version = UA.match( /version\/([\d.]+)/ )[1];
     }else if( GLOBAL.process && process.versions && process.versions.node ){
         name    = "node";
         version = process.version;
     }
-
     Env.FormData   = GLOBAL.FormData;
     Env.isBrowser  = name !== "node";
     Env.global     = GLOBAL;
@@ -180,7 +177,7 @@ Define( "Env", function( _require, Env, module ){
         switch( name ){
             case "ie":
                 engine.name    = "Trident";
-                engine.version = XMLHttpRequest ? ( DOC.querySelectorAll ? 6 : 5 ) : 4;
+                engine.version = typeof XMLHttpRequest !== "undefined" ? ( DOC.querySelectorAll ? 6 : 5 ) : 4;
             break;
             case "firefox":
                 engine.name    = "Gecko";
@@ -195,7 +192,7 @@ Define( "Env", function( _require, Env, module ){
             break;
             case "safari":
                 engine.name    = "Webkit";
-                engine.version = Browser.Features.xpath ? ( Browser.Features.query ? 525 : 420 ) : 419;
+                engine.version = DOC.evaluate ? ( DOC.querySelector ? 525 : 420 ) : 419;
             break;
         }
         return engine;

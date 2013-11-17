@@ -856,7 +856,7 @@ Define( "Dom", Depend( "~/Cox/Env", "~/Cox/UI/Animation" ), function( require, D
                 target.attachEvent( "on" + type.toLowerCase(), fix );
                 return fix;
             }
-        ][ ~~( Env.name === "ie" ) ];
+        ][ ~~( !Env.global.addEventListener ) ];
     } );
 
     Dom.containersClass = function ( target, className ){
