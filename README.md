@@ -247,6 +247,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ----------------------------------------------------------------------------
 
 ###Cox.js 版本日志
+####1.1.0
+-   加入了依赖jQuery框架的一些工具模块
+-   Cox.js核心模块已兼容IE6+
 
 ####1.0.0 <span style="color:blue; font-size:0.5em" >*正式版*</span>
 -   优化早期版本中实现的大部分功能模块
