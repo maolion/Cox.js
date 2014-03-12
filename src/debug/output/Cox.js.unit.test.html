@@ -6,8 +6,8 @@
     <title>debug Cox-v0.1.base.js</title>
 </head>
 <body>
-    <script type="text/javascript" src="../Cox.js" cox-path="./; Cox=../modules" ></script>
-    <script type="text/javascript">
+    <script type="text/javascript" src="/Cox.js" cox-path="./; Cox=../modules" ></script>
+    <script type="text/javascript" cox-app>
         console.log(Modules.getRoot(""));
         console.log(Modules.getRoot("Cox"));
         Use(["~/A", "~/Cox/Env"], function(require)
@@ -16,7 +16,7 @@
             var Env = require("Env");
             console.log(A);
             console.log(Env);
-        }); 
+        });
     </script>
 </body>
 

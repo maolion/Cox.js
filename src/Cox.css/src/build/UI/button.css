@@ -1,0 +1,238 @@
+/***
+ *  ▄████▄      ▒█████     ▒██   ██▒ Cox CSS Framework   
+ * ▒██▀ ▀█     ▒██▒  ██▒   ▒▒ █ █ ▒░   
+ * ▒▓█    ▄    ▒██░  ██▒   ░░  █   ░   
+ * ▒▓▓▄ ▄██▒   ▒██   ██░    ░ █ █ ▒    
+ * ▒ ▓███▀ ░   ░ ████▓▒░   ▒██▒ ▒██▒   
+ * ░ ░▒ ▒  ░   ░ ▒░▒░▒░    ▒▒ ░ ░▓ ░   
+ *   ░  ▒        ░ ▒ ▒░    ░░   ░▒ ░   
+ * ░           ░ ░ ░ ▒      ░    ░   
+ * ░ ░             ░ ░      ░    ░     
+ * ░                  
+ * ----------------------------------------------------------------------------
+ * <button.less> - 2014/3/12
+ * @version 0.1
+ * @author  Joye, maolion.j@gmail.com
+ * @website http://maolion.com
+ */
+/*@TEXT_LABEL_ICON_WIDTH : 24px;
+@TEXT_LABEL_ICON_HEIGHT  : 24px;*/
+/*UIButton*/
+/***
+ *  ▄████▄      ▒█████     ▒██   ██▒ Cox CSS Framework   
+ * ▒██▀ ▀█     ▒██▒  ██▒   ▒▒ █ █ ▒░   
+ * ▒▓█    ▄    ▒██░  ██▒   ░░  █   ░   
+ * ▒▓▓▄ ▄██▒   ▒██   ██░    ░ █ █ ▒    
+ * ▒ ▓███▀ ░   ░ ████▓▒░   ▒██▒ ▒██▒   
+ * ░ ░▒ ▒  ░   ░ ▒░▒░▒░    ▒▒ ░ ░▓ ░   
+ *   ░  ▒        ░ ▒ ▒░    ░░   ░▒ ░   
+ * ░           ░ ░ ░ ▒      ░    ░   
+ * ░ ░             ░ ░      ░    ░     
+ * ░                  
+ * ----------------------------------------------------------------------------
+ * <utils.less> - 2014/3/10
+ * @version 0.1
+ * @author  Joye, maolion.j@gmail.com
+ * @website http://maolion.com
+ */
+/**工具集**/
+/**
+ * clearWhiteBorder 清除盒模型的空白边框
+ * @example
+ * #box{
+ *     .clearWhiteBorder;
+ * }
+ */
+.clearWhiteBorder {
+  margin: 0;
+  padding: 0;
+}
+/**
+ * borderRadius border-radius 兼容适配器
+ * @param {...} [top-left, top-right, bottom-right, bottom-left]
+ *              [top-left, top-right&bottom-right, bottom-right]
+ *              [top-left&bottom-right, top-right&bottom-right]
+ *              [top-left&top-right&bottom-right&bottom-left]
+ * @example
+ * #box{
+ *     .borderRadius(10px, 10px, 10px, 10px);
+ *     .borderRadius(10px, 10px, 10px);
+ *     .borderRadius(10px, 10px);
+ *     .borderRadius(10px);
+ * }
+ */
+/**
+ * boxSizing border-sizing 兼容适配器
+ * @param {Value} value
+ * @example
+ * #box{
+ *     .boxSizing(border-box)
+ * }
+ */
+/**
+ * userSelect 控制网页内容的选择范围
+ * @param {Vlaue} value
+ * @example
+ * #box{
+ *     .userSelect(none);
+ * }
+ */
+/**
+ * transition 定义CSS属性值在一定的时间区间内平滑地过渡
+ * @param {Vlaue} value
+ * @example
+ * #box{
+ *     .transition(all ease .15s);
+ * }
+ */
+/**
+ * transition 定义CSS属性值在一定的时间区间内平滑地过渡
+ * @param {Property} p 子属性
+ * @param {Vlaue} value
+ * @example
+ * #box{
+ *     .transition(duration, .15s);
+ * }
+ */
+/***
+ *  ▄████▄      ▒█████     ▒██   ██▒ Cox CSS Framework   
+ * ▒██▀ ▀█     ▒██▒  ██▒   ▒▒ █ █ ▒░   
+ * ▒▓█    ▄    ▒██░  ██▒   ░░  █   ░   
+ * ▒▓▓▄ ▄██▒   ▒██   ██░    ░ █ █ ▒    
+ * ▒ ▓███▀ ░   ░ ████▓▒░   ▒██▒ ▒██▒   
+ * ░ ░▒ ▒  ░   ░ ▒░▒░▒░    ▒▒ ░ ░▓ ░   
+ *   ░  ▒        ░ ▒ ▒░    ░░   ░▒ ░   
+ * ░           ░ ░ ░ ▒      ░    ░   
+ * ░ ░             ░ ░      ░    ░     
+ * ░                  
+ * ----------------------------------------------------------------------------
+ * <utils.less> - 2014/3/10
+ * @version 0.1
+ * @author  Joye, maolion.j@gmail.com
+ * @website http://maolion.com
+ */
+/**
+ * UIButton 按钮组件，提供了一些控制按钮样式的接口
+ */
+.UIButton {
+  /**
+     * UIButton>.newTheme 创建一个新按钮颜色主题风格
+     * @param {className} name 主题名称
+     * @param {Color} color 按钮背景颜色值
+     * @example
+     *
+     * .UIButton>.newTheme(escape('green'), green);
+     */
+  /**
+     * UIButton>.newSize 创建一个新按钮大小风格
+     * @param {className} name 主题名称
+     * @param {Value} width 按钮宽
+     * @param {Value} height 按钮高
+     * @example
+     *
+     * .UIButton>.newSize(escape('large'), 100px, 30px);
+     */
+}
+.button {
+  margin: 0;
+  border: none;
+  outline: 0;
+  display: inline-block;
+  padding: 5px;
+  font-weight: normal;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  vertical-align: middle;
+  background-image: none;
+  color: #fff;
+  position: relative;
+  line-height: 20px;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+  box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -webkit-transition: all ease 0.15s;
+  transition: all ease 0.15s;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+.button.block {
+  display: block!important;
+  width: 100%!important;
+}
+.button.icon-text,
+.button.icon {
+  width: auto;
+  height: auto;
+}
+.button.noradius {
+  border-radius: 0;
+  -moz-border-radius: 0;
+  -webkit-border-radius: 0;
+}
+.button i {
+  margin: 3px;
+}
+.button.icon-text i {
+  display: block;
+  text-align: center;
+  margin-bottom: 2px;
+}
+a.button.block {
+  *width: auto!important;
+}
+.button[disabled],
+.button.disabled {
+  pointer-events: none;
+  color: #BFBFBF;
+  cursor: default;
+}
+.button:active,
+.button.active {
+  left: 1px;
+  top: 1px;
+}
+.button[disabled]:active,
+.button[disabled].active,
+.button.disabled:active,
+.button.disabled.active {
+  left: 0px !important;
+  top: 0px !important;
+}
+.button.noindent:active,
+.button.noindent.active {
+  left: 0 !important;
+  top: 0 !important;
+}
+.button {
+  background-color: #8b9aa3;
+}
+.button[disabled],
+.button.disabled {
+  background-color: #e0e4e7 !important;
+}
+.button:hover,
+.button.hover {
+  background-color: #7d8e98;
+}
+.button:active,
+.button.active {
+  background-color: #64747e;
+}
+.button.large {
+  min-width: 70px;
+  min-height: 30px;
+  _width: 70px;
+  _height: 30px;
+  line-height: 30px;
+  overflow: visible;
+}
+/*# sourceMappingURL=button.css.map */

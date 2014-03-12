@@ -1,0 +1,259 @@
+/***
+ *  ▄████▄      ▒█████     ▒██   ██▒ Cox CSS Framework   
+ * ▒██▀ ▀█     ▒██▒  ██▒   ▒▒ █ █ ▒░   
+ * ▒▓█    ▄    ▒██░  ██▒   ░░  █   ░   
+ * ▒▓▓▄ ▄██▒   ▒██   ██░    ░ █ █ ▒    
+ * ▒ ▓███▀ ░   ░ ████▓▒░   ▒██▒ ▒██▒   
+ * ░ ░▒ ▒  ░   ░ ▒░▒░▒░    ▒▒ ░ ░▓ ░   
+ *   ░  ▒        ░ ▒ ▒░    ░░   ░▒ ░   
+ * ░           ░ ░ ░ ▒      ░    ░   
+ * ░ ░             ░ ░      ░    ░     
+ * ░                  
+ * ----------------------------------------------------------------------------
+ * <typography.less> - 2014/3/10
+ * @version 0.1
+ * @author  Joye, maolion.j@gmail.com
+ * @website http://maolion.com
+ */
+
+@import "variables.less";
+@import "utils.less";
+
+body{
+    background: @BODY_BACKGROUND; 
+    color: @BASE_FONT_COLOR;
+    font: @BASE_FONT_SIZE/@BASE_LINE_HEIGHT @BASE_FONT_FAMILY;
+}
+
+h1{
+    font-size: 2.8em;
+}
+h2{
+    font-size: 2.4em;
+}
+h3{
+    font-size: 2em;
+}
+h4{
+    font-size: 1.6em;
+}
+h5{
+    font-size: 1.2em;
+}
+h5{
+    font-size: 1em;
+}
+
+p{
+    margin: 0px 0px 10px 0;
+}
+small{
+    font-size: 85%;
+}
+
+blockquote{
+    padding: 0 0 0 15px;
+    margin: 0 0 20px 0;
+    border-left: 5px solid #ddd;
+    width: auto;
+}
+blockquote p{
+    margin-bottom: 0;
+    font-weight: 700;
+    font-size:1.1em;
+}
+blockquote.pull-right{
+    float: right;
+    border-right: 5px solid #ddd;
+    border-left: 0;
+    padding-right: 15px;
+    padding-left: 0;
+}
+
+blockquote.pull-right p{
+    text-align: right;
+}
+
+ul, ol {
+    padding: 0;
+    margin: 0 0 10px 25px;
+}
+ul ul, ol ul {
+    list-style-type: circle;
+    list-style-position: outside;
+}
+ul.unstyled {
+    list-style-type: none;
+    margin-left: 0;
+}
+li {    
+    display: list-item;
+    line-height: @BASE_LIST_LINE_HEIGHT;
+}
+ul.inline, ol.inline {
+    margin-left: 0;
+    list-style-type: none;
+}
+ul.inline li, ol.inline li {
+    display: inline-block;
+    _display: inline;
+    _zoom: 1;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+dt, dd {
+    line-height: @BASE_LIST_LINE_HEIGHT;
+}
+
+dt {
+    font-weight: 700;
+}
+dd {
+    margin-left: 10px;
+}
+
+dl.horizontal {
+    display: block;
+    _zoom:1;
+}
+
+dl.horizontal dt {
+    float: left;
+    width: 160px;
+    line-height: 20px;
+    overflow: hidden;
+    clear: left;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+dl.horizontal dd {
+    margin-left: 180px;
+    display: block;
+}
+
+
+code { 
+    display: inline-block;
+}
+
+pre{
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+span.icon-label{
+    display: inline-block;
+    line-height: @BASE_LIST_LINE_HEIGHT;
+}
+span.icon-label i{
+    vertical-align: middle;
+    font-size: @TEXT_LABEL_ICON_SIZE;
+}
+
+textarea, input[type="text"], input[type="password"], input[type="datetime"], 
+input[type="datetime-local"], input[type="date"], input[type="month"], 
+input[type="time"], input[type="week"], input[type="number"], input[type="email"], 
+input[type="url"], input[type="search"], input[type="tel"], input[type="color"] {
+    //border-radius: 0!important;
+    color: #666;
+    background-color: #fff;
+    border: 1px solid #d5d5d5;
+    padding: 5px 4px;
+    _zoom: 1;
+    line-height: @BASE_LINE_HEIGHT - 10;
+    height: @BASE_LINE_HEIGHT;
+    font-size: 1.3em;
+    font-family: inherit;
+    -webkit-box-shadow: none!important;
+    box-shadow: none!important;
+    .borderRadius(2px);
+    .transition(duration, .1s);
+
+}
+input.text{
+    height:5000px;
+}
+/**
+ * text-left 文本左对齐
+ * @example
+ * p {
+ *     .text-left;
+ * }
+ * <p class="text-left"></p>
+ */
+.text-left{
+    text-align: left;
+}
+
+
+/**
+ * text-center 文本居中对齐
+ * @example
+ * p {
+ *     .text-center;  
+ * }
+ * <p class="text-center"></p>
+ */
+.text-center{
+    text-align: center;
+}
+
+/**
+ * text-right 文本右对齐
+ * @example
+ * p {
+ *     .text-right;  
+ * }
+ * <p class="text-right"></p>
+ */
+.text-right{
+    text-align: right;
+}
+
+/**
+ * hidden 隐藏元素
+ * @example
+ * <div hidden></div>
+ * <div class="hidden"></div>
+ */
+.hidden, [hideen] { 
+    display: none;
+}
+
+/**
+ * column-left 元素左浮动
+ * @example
+ * <div class="column-left"></div>
+ */
+.column-left{
+    float: left;
+    _display: inline;    
+}
+
+/**
+ * column-right 元素右浮动
+ * @example
+ * <div class="column-right"></div>
+ */
+.column-right{
+    float: right;
+    _display: inline;
+}
+.column-center{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+/**
+ * clearfix 清除容器中内容浮动
+ * @example
+ * <div class="clearfix"></div>
+ */
+.clearfix {
+    overflow: hidden;
+    _zoom: 1;
+}
+

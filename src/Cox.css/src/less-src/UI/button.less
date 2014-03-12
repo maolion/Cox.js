@@ -1,0 +1,94 @@
+/***
+ *  ▄████▄      ▒█████     ▒██   ██▒ Cox CSS Framework   
+ * ▒██▀ ▀█     ▒██▒  ██▒   ▒▒ █ █ ▒░   
+ * ▒▓█    ▄    ▒██░  ██▒   ░░  █   ░   
+ * ▒▓▓▄ ▄██▒   ▒██   ██░    ░ █ █ ▒    
+ * ▒ ▓███▀ ░   ░ ████▓▒░   ▒██▒ ▒██▒   
+ * ░ ░▒ ▒  ░   ░ ▒░▒░▒░    ▒▒ ░ ░▓ ░   
+ *   ░  ▒        ░ ▒ ▒░    ░░   ░▒ ░   
+ * ░           ░ ░ ░ ▒      ░    ░   
+ * ░ ░             ░ ░      ░    ░     
+ * ░                  
+ * ----------------------------------------------------------------------------
+ * <button.less> - 2014/3/12
+ * @version 0.1
+ * @author  Joye, maolion.j@gmail.com
+ * @website http://maolion.com
+ */
+
+@import "../variables.less";
+@import "../utils.less";
+@import "./utils.less";
+
+.button{
+    margin: 0;
+    border: none;
+    outline: 0;
+    display: inline-block;
+    padding: 5px;
+    font-weight: normal;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    vertical-align: middle;
+    background-image: none;
+    color: #fff;
+    position: relative;
+    line-height: @UI_BUTTON_BASE_LINE_HEIGHT;
+    text-shadow: 0 -1px 0 rgba(0,0,0,0.25);
+    .boxSizing(content-box);
+    .borderRadius(4px);
+    .transition(all ease @UI_BUTTON_TRANSITION_SPEED);
+    .userSelect(none);
+}
+.button.block{
+    display: block!important;
+    width: 100%!important;
+}
+.button.icon-text,
+.button.icon{
+    width: auto;
+    height: auto;
+}
+.button.noradius{
+    .borderRadius(0);
+}
+.button i{
+    margin: 3px;
+}
+.button.icon-text i{
+    display: block;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+a.button.block{
+    *width:auto!important;
+}
+.button[disabled], .button.disabled{
+    pointer-events: none;
+    color:#BFBFBF;
+    cursor: default;
+}
+
+.button:active, .button.active{
+    left: 1px;
+    top: 1px;
+}
+
+.button[disabled]:active,
+.button[disabled].active,
+.button.disabled:active,
+.button.disabled.active{
+    left: 0px !important;
+    top: 0px !important;
+}
+.button.noindent:active, .button.noindent.active {
+    left:0 !important;
+    top:0 !important;
+}
+
+.UIButton>.newTheme(escape(''), #8b9aa3);
+.UIButton>.newSize(escape('.large'), 80px, 40px);
+
+

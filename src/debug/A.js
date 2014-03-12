@@ -11,5 +11,7 @@
  */
 
 Define( "A", Depend( [ "./B", "./C" ] ), function( require, A ){
+    console.log(require("B"));
+    console.log(require("C"));
     A.name = "A";
 } );

@@ -1,0 +1,80 @@
+
+
+a.cox-ui-form-radio{
+    position: relative;
+    display: inline-block;
+}
+
+a.cox-ui-form-radio .text{
+    display: inline-block;
+    padding: 0 5px;
+    line-height: 25px;
+    text-align: center;
+    border:1px solid #A0A0A0;
+    min-width: 30px;
+    cursor: pointer;
+    margin: 1px;
+}
+
+a.cox-ui-form-radio-checked .text,
+a.cox-ui-form-radio:hover .text{
+    border:2px solid #c30008;
+    margin: 0px;
+}
+
+a.cox-ui-form-radio-checked .state{
+    background:url(images/radio-checked.png) no-repeat 0 0;
+    position:absolute;
+    width:12px;
+    height:12px;
+    right:0;
+    bottom:0;
+}
+
+
+a.cox-ui-form-radio input{
+    display: none;
+
+}
+div.cox-ui-form-amount-increase{
+    position: relative;
+    display: inline-block;
+    width:85px;
+    background:#A0A0A0;
+    overflow: hidden;
+    vertical-align: middle;
+    *display: inline;
+    zoom:1;
+}
+div.cox-ui-form-amount-increase input{
+    width:66px;
+    text-indent: 5px;
+    height:24px;
+    border: none;
+    border:1px solid #A0A0A0;
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+    *margin-left:-5px;
+    *margin-top:-1px;
+    line-height: 24px\9;
+    vertical-align: middle;
+}
+div.cox-ui-form-amount-increase button{
+    top:1px;
+    position: absolute;
+    width:14px;
+    height:11px;
+    padding: 0;
+    margin: 0;
+    font-size:0;
+    border:none;
+    outline: none;
+    right:1px;
+    background: url(images/amount-increase-btns.png) no-repeat 0 0;
+    cursor: pointer;
+}
+div.cox-ui-form-amount-increase button.decrease{
+    top:14px;
+    background-position: 0 -12px;
+}

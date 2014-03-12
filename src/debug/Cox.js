@@ -176,7 +176,7 @@
             this.unit              = unit || null;
             this.test_all_always   = !!test_args[0];
             this.only_fail_message = !!test_args[1];
-        };
+        }
 
         /**
          * assert 保证某一结果的正确性
@@ -3431,6 +3431,10 @@
                         SINGLE_INSTANCE : null
                     }
                 ;
+                constructor = function ()
+                {
+                    this.Super.apply(this, ["constructor"].concat(SLICE.call(arguments)));
+                }
                 //类的因不同模式有不同的要求，所以类交给模式创建
                 newclass = classinfo.CLASS = mode.newClass( classinfo );
 
@@ -3450,10 +3454,7 @@
 
                 //子类只有得到父类高级函数的克隆版本才能被正常使用
                 if( superinfo && typeof superinfo.CONSTRUCTOR === "function" ){
-                    constructor = superinfo.CONSTRUCTOR;
-                    if( typeof constructor.clone === "function" ){
-                        constructor = constructor.clone();
-                    }
+                    constructor = superinfo.CONSTRUCTOR.clone ? superinfo.CONSTRUCTOR.clone() : constructor;
                 }
 
                 //复制父类的类成员到子类上
@@ -4205,24 +4206,53 @@
 
             /**
              * @method done 延迟操作完成时（不管是被接受还是被拒绝)
-             * @param { Function } callback
+             * @param { Params(Function) } callbacks
+             *  回调函数中参数说明
+             *  @param {Boolean} 异步判断执行成功状态
+             *  @param {Object} 数据
+             *  @param {Function} 结束按钮
+             *  @param {Boolean} 错误标记
              */
             Public.done = _XFunction(
-                Function, function( callback ){
-                    if( this._state === DSTATE_UNFULFILLED ){
-                        this.addOnceEventListener( "done", callback );
-                    }else{
-                        callback.call( this, this._state === DSTATE_FULFILLED , this._value, this._error );
+                _Params(Function), function(callbacks)
+                {
+                    var 
+                        _this = this,
+                        event = this.getEvent("done"),
+                        stop  = false
+                    ;
+
+                    if (this._state === DSTATE_UNFULFILLED) {
+                        this.addOnceEventListener("done", callback);
+                    } else {
+                        callback(this._state === DSTATE_FULFILLED , this._value, this._error);
                     }
+                    function callback(state, value, error)
+                    {
+                        _XList.forEach(callbacks, function(callback)
+                        {
+                            callback.call(_this, state, value, end, error);
+                            return !stop;
+                        });
+                    }
+                    function end()
+                    {
+                        stop = true;
+                        event.stopPropagation();
+                    };
                 }
             );
+
 
             /**
              * @method resolved 延迟操作被接受（操作完成）
              * @param { Object } value
              */
             Public.resolved = function( value ){
-                var _this = this;
+                var 
+                    _this = this,
+                    event = this.getEvent("resolved")
+                ;
                 if( this._state !== DSTATE_UNFULFILLED ){
                     throw new Error( "非法操作:" );
                 }
@@ -4237,7 +4267,7 @@
                         value, 
                         this.__COX_DEFERRED_ERROR__,
                         function end(){
-                            _this.getEvent( "resolved" ).stopPropagation()
+                            event.stopPropagation();
                         }
                     ]
                 );
@@ -4304,7 +4334,8 @@
             new _UTest( "Deferred", function( assert ){
                 var 
                     d1 = new _Deferred(),
-                    t  = []
+                    t  = [],
+                    t2 = null
                 ;
                 assert( d1 instanceof _Deferred, "检测是否能正确执行-1" );
                 assert( d1 instanceof _EventSource, "检测是否能正确执行-2" );
@@ -4373,6 +4404,18 @@
 
                 d1 = new _Deferred();
                 t  = 0;
+                t2 = 0;
+                d1.done(
+                    function()
+                    {
+                        t2++;
+                    },
+                    function()
+                    {
+                        t2++;
+                    }
+                );
+                
                 d1.then(
                     function( v, error, end ){
                         error( "error" );
@@ -4399,8 +4442,20 @@
                 d1.done( function( o, v ){
                     t += v;
                 } );
+                d1.done(
+                    function(a, b, e)
+                    {
+                        t2++;
+                        e();
+                    },
+                    function()
+                    {
+                        t2++;
+                    }
+                );
                 d1.resolved( 10 );
                 assert( t === 5, "检测是否能正确执行-10" );
+                assert(t2 === 3, "检测是否能正确执行-11");
             } )
         );
         //tools_unit.subUnit( "Deferred" ).test();
@@ -4652,9 +4707,17 @@
                     function(){ t = 0; },
                     function(){ t-- }
                 );
-                ds.done( function(){
-                    t++;
-                } );
+                ds.done( 
+                    function(s, v, e)
+                    {
+                        t++;
+                        e();
+                    }, 
+                    function()
+                    {
+                        t++;
+                    }
+                );
                 d1.resolved( 1 );
                 d2.resolved( 2 );
                 d3.resolved( 3 );
@@ -4686,6 +4749,8 @@
             RE_DIR_NAME        = /^(.*)\/.*$/,
             RE_MODULE_NAME     = /^[\w.]+$/,
             RE_PATH_SEP        = /\\{1,}/g,
+            RE_ROOT_PATH_SEP   = /\s*;\s*/,
+            RE_KV_SEP          = /\s*=\s*/,
             REL                = null,
             LOCA_URL           = null,
             LOCA_PROTOCOL      = null,
@@ -4808,9 +4873,9 @@
             RE_PATH_SEP.lastIndex = 0;
             return path.replace( RE_PATH_SEP, "/" );
         }
-
-        config.roots[ "~/" ]    = MODULE_ROOT;
+        config.roots[ "~/" ] = MODULE_ROOT;
         config.roots[ "~/Cox" ] = ( isNode ? stdSep( __dirname ) : MODULE_ROOT ) + "/modules";
+
 
         /**
          * _require 创建一个针对指定模块的引用器
@@ -4895,7 +4960,7 @@
 
             //模块加载器
             load = [
-                !isNode && function(){
+                function(){
                     //浏览器
                     var 
                         DOC       = document,
@@ -5565,6 +5630,27 @@
             }
         );
 
+        if (isBrowser) {
+            var scripts     = GLOBAL.document.getElementsByTagName("SCRIPT");
+            _XList.forEach(scripts, function(item)
+            {
+                var paths = item.getAttribute("cox-path");
+                if (paths !== null) {
+                    var item = null; 
+                    paths = _XString.trim(paths).split(RE_ROOT_PATH_SEP);
+                    while (item = paths.shift()) {
+                        kv = item.split(RE_KV_SEP);
+                        if (kv.length === 1) {
+                            _Modules.addRoot("", kv[0]);
+                        } else {
+                            _Modules.addRoot(kv[0], kv[1]);
+                        }
+                    }
+                    return false;
+                }
+            });
+        }
+
         amd_unit = new _UTest(
             "AMD", function( assert, deferred, next ){
                 var t = 0;
@@ -5654,18 +5740,35 @@
         Array, _Modules
     );
 
+    GLOBAL.Use = Cox.Use = _XFunction( _Modules, _Optional( String ), Function, _Use );
+    GLOBAL.Use.define(Array, Function, function(moduleIds, callback)
+    {
+        return _Use(_Modules(moduleIds), "", callback);
+    });
+    GLOBAL.Use.define(String, Function, function(moduleId, callback){
+        return _Use(_Modules([moduleId]), "", callback);
+    });
 
     GLOBAL.Depend     = Cox.Modules;
-    GLOBAL.Use        = Cox.Use = _XFunction( _Modules, _Optional( String ), Function, _Use );
+
     Cox.Event         = _Event;
     Cox.EventListener = _EventListener;
     Cox.EventSource   = _EventSource;
     Cox.PlainObject   = _PlainObject;    
     Cox.ownDocument   = GLOBAL.document;
     Cox.ownWindow     = GLOBAL;
-    _XObject.mix( GLOBAL.Modules, _Modules, true );
+    _XObject.mix( GLOBAL.Modules, _Modules, true ); 
     
     typeof exports !== "undefined" && ( module.exports = Cox );
 
-    gunit.test( true );
+    //gunit.test( true );
 }();
+
+/*
+Modules.route({
+    "~" : "abc",
+    "~/Cox" : "/js/libs/Cox/modules/",
+    "jQuery" : function(){
+        return typeof jQuery !== "undefined" ? jQuery : "~/Cox/Extends/jQuery";
+    }
+});*/

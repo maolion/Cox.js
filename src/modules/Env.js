@@ -23,22 +23,20 @@ Define( "Env", function( _require, Env, module ){
     ;
     if( "ActiveXObject" in GLOBAL ){
         name    = "ie";
-        version = (UA.match( /ie ([\d.]+)/ ) || UA.match(/trident.*rv:([\d.]+)/))[1];
-    }else if( DOC.getBoxObjectFor || DOC.getBindingParent ){
+        version = (UA.match( /ie ([\d.]+)/ ) || UA.match(/trident.*rv:([\d.]+)/) || [])[1];
+    }else if( DOC.getBoxObjectFor || DOC.getBindingParent || "mozFullScreen" in DOC ){
         name    = "firefox";
-        version = UA.match( /firefox\/([\d.]+)/ )[1];
+        version = (UA.match( /firefox\/([\d.]+)/ ) || [])[1];
     }else if( GLOBAL.opera ){
         name    = "opera";
-        version = UA.match( /opera.([\d.]+)/ )[1];
+        version = (UA.match( /opera.([\d.]+)/ ) || [])[1];
     }else if( !GLOBAL.chrome && GLOBAL.openDatabase ){
         name    = "safari";
-        version = (UA.match( /version\/([\d.]+)/ )||[])[1];
-    }else if( GLOBAL.chrome 
-           || ( GLOBAL.MessageEvent && !DOC.getBoxObjectFor )
-    ){
+        version = (UA.match( /version\/([\d.]+)/ ) || [])[1];
+    }else if( GLOBAL.chrome ){
         name    = "chrome";
-        version = UA.match( /chrome\/([\d.]+)/ )[1];
-    }else if( GLOBAL.process && process.versions && process.versions.node ){
+        version = (UA.match( /chrome\/([\d.]+)/ ) || [])[1];
+    }else if( !GLOBAL.require && typeof require !== "undefined" ){
         name    = "node";
         version = process.version;
     }

@@ -98,6 +98,27 @@ Define("Loader", Depend("~/Cox/Extends/jQuery", "~/Cox/Tools/Queue", "~/Cox/Env"
                 this._curImage = null;
             };
         });
+    
+        Static.load = XFunction(jQuery, Optional(Function), function(image, callback)
+        {
+            var load = new Deferred;
+            image.one("load", loadHandler);
+            image.one("error", errorHandler);
+            image.attr('src', image.attr('data-src'));
+            function loadHandler()
+            {
+                load.resolved(image);
+                image.off("error", errorHandler);
+                callback&&callback(image, true);
+            }
+            function errorHandler()
+            {
+                load.rejected(image);
+                image.off("load", loadHandler);
+                callback&&callback(image);
+            }
+            return load;
+        });
 
         Public.constructor = XFunction(Optional(Number, Static.DEFAULT_THREAD_COUNT), function(threadCount)
         {
