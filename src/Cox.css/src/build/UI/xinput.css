@@ -10,7 +10,7 @@
  * ░ ░             ░ ░      ░    ░     
  * ░                  
  * ----------------------------------------------------------------------------
- * <button.less> - 2014/3/12
+ * <xinput.less> - 2014/3/13
  * @version 0.1
  * @author  Joye, maolion.j@gmail.com
  * @website http://maolion.com
@@ -133,109 +133,95 @@
      * .UIButton>.newSize(escape('large'), 100px, 30px);
      */
 }
-.button {
-  margin: 0;
-  border: none;
-  outline: 0;
-  display: inline-block;
-  padding: 5px;
-  font-weight: normal;
-  text-align: center;
-  white-space: nowrap;
-  cursor: pointer;
-  vertical-align: middle;
-  background-image: none;
-  color: #fff;
+.x-input-text {
+  display: table;
   position: relative;
-  line-height: 20px;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
-  box-sizing: content-box;
-  -moz-box-sizing: content-box;
-  -webkit-box-sizing: content-box;
-  border-radius: 4px;
-  -moz-border-radius: 4px;
-  -webkit-border-radius: 4px;
-  -webkit-transition: all ease 0.15s;
-  transition: all ease 0.15s;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -o-user-select: none;
-  user-select: none;
+  border-collapse: separate;
+  width: 200px;
+  border-radius: 2px;
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  overflow: hidden;
 }
-.button.block {
-  display: block!important;
-  width: 100%!important;
+.x-input-text span.addon {
+  display: table-cell;
+  width: 1%;
+  margin: 0;
+  padding: 0 10px;
+  padding: 0 8px\9;
+  background: #eee;
+  border: 1px solid #ccc;
+  font-size: 1.2em;
+  border-right-width: 0;
+  vertical-align: middle;
 }
-.button.icon-text,
-.button.icon {
-  width: auto;
-  height: auto;
+.x-input-text span.addon i {
+  vertical-align: middle;
 }
-.button.noradius {
+.x-input-text.right span.addon {
+  border-left-width: 0;
+  border-right-width: 1px;
+}
+.x-input-text input {
   border-radius: 0;
   -moz-border-radius: 0;
   -webkit-border-radius: 0;
+  display: table-cell;
+  padding: 5px 4px;
+  margin: 0;
+  line-height: 20px;
+  margin-bottom: 0;
+  border: 1px solid #ccc;
+  width: 100%;
 }
-.button i {
-  margin: 3px;
-}
-.button.icon-text i {
+.lt-ie8 .x-input-text {
   display: block;
+  margin: 0;
+  padding-left: 32px;
+  width: 150px;
+  border: 1px solid #ccc;
+}
+.lt-ie8 .x-input-text span.addon {
+  border: 0;
+  padding: 0;
+  width: 24px;
+  height: 30px;
+  margin-left: -32px;
   text-align: center;
-  margin-bottom: 2px;
+  overflow: hidden;
+  float: left;
+  display: inline;
+  vertical-align: middle;
 }
-.button[disabled],
-.button.disabled {
-  pointer-events: none;
-  color: #BFBFBF;
-  cursor: default;
-  background-color: #e0e4e7 !important;
+.lt-ie8 .x-input-text span.addon i {
+  display: block;
+  background: #999;
+  width: 16px;
+  height: 16px;
+  margin-top: 7px;
 }
-.button:active,
-.button.active {
-  left: 1px;
-  top: 1px;
+.lt-ie8 .x-input-text input {
+  width: 100%;
+  float: left;
+  border: 0;
+  padding: 5px 4px;
+  margin: 0;
+  height: 20px;
+  line-height: 20px;
+  margin-left: -9px;
+  border-left: 1px solid #ccc;
 }
-.button[disabled]:active,
-.button[disabled].active,
-.button.disabled:active,
-.button.disabled.active {
-  left: 0px !important;
-  top: 0px !important;
+.lt-ie8 .x-input-text.right {
+  padding-left: 0;
+  padding-right: 32px;
 }
-.button.noindent:active,
-.button.noindent.active {
-  left: 0 !important;
-  top: 0 !important;
+.lt-ie8 .x-input-text.right span.addon {
+  margin-left: 0;
+  margin-right: -23px;
 }
-.button.noindent:active,
-.button.noindent.active {
-  left: 0 !important;
-  top: 0 !important;
+.lt-ie8 .x-input-text.right input {
+  margin-left: 0;
+  border-left: 0;
+  border-right: 1px solid #ccc;
 }
-.button {
-  background-color: #8b9aa3;
-}
-.button:hover,
-.button.hover {
-  background-color: #7d8e98;
-}
-.button:active,
-.button.active {
-  background-color: #64747e;
-}
-.button[disabled],
-.button.disabled {
-  background-color: #e0e4e7 !important;
-}
-.button.large {
-  min-width: 70px;
-  min-height: 30px;
-  _width: 70px;
-  _height: 30px;
-  line-height: 30px;
-  overflow: visible;
-}
-/*# sourceMappingURL=button.css.map */
+/*# sourceMappingURL=xinput.css.map */

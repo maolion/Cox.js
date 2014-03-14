@@ -94,6 +94,13 @@
  *     .transition(duration, .15s);
  * }
  */
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
 body {
   background: transparent;
   color: #000000;
@@ -175,16 +182,6 @@ ol.inline li {
   padding-left: 5px;
   padding-right: 5px;
 }
-dt,
-dd {
-  line-height: 20px;
-}
-dt {
-  font-weight: 700;
-}
-dd {
-  margin-left: 10px;
-}
 dl.horizontal {
   display: block;
   _zoom: 1;
@@ -203,6 +200,16 @@ dl.horizontal dd {
   margin-left: 180px;
   display: block;
 }
+dt,
+dd {
+  line-height: 20px;
+}
+dt {
+  font-weight: 700;
+}
+dd {
+  margin-left: 10px;
+}
 code {
   display: inline-block;
 }
@@ -217,41 +224,6 @@ span.icon-label {
 span.icon-label i {
   vertical-align: middle;
   font-size: 1em;
-}
-textarea,
-input[type="text"],
-input[type="password"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="date"],
-input[type="month"],
-input[type="time"],
-input[type="week"],
-input[type="number"],
-input[type="email"],
-input[type="url"],
-input[type="search"],
-input[type="tel"],
-input[type="color"] {
-  color: #666;
-  background-color: #fff;
-  border: 1px solid #d5d5d5;
-  padding: 5px 4px;
-  _zoom: 1;
-  line-height: -8.4;
-  height: 1.6;
-  font-size: 1.3em;
-  font-family: inherit;
-  -webkit-box-shadow: none!important;
-  box-shadow: none!important;
-  border-radius: 2px;
-  -moz-border-radius: 2px;
-  -webkit-border-radius: 2px;
-  -webkit-transition-duration: 0.1s;
-  transition-duration: 0.1s;
-}
-input.text {
-  height: 5000px;
 }
 /**
  * text-left 文本左对齐

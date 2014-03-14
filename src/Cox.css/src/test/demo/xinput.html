@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+    
+    <title>Untitled</title>
+    <style>
+        body, div, input, span{
+            padding: 0;
+            margin: 0;
+        }
+        .wrap{
+            margin: 30px;
+        }
+        .x-input{
+            width:200px;
+            background: red;
+            zoom:1;
+            overflow: hidden;
+            border:1px solid #ccc;
+        }
+        .x-input .wrapx{
+            padding-left:30px;
+        }
+        .x-input .wrapx span{
+            display: block;
+            margin-left: -30px;
+            width: 30px;
+            height: 30px;
+            background: blue;
+            float: left;
+            display: inline;
+        }
+        .x-input .wrapx input{
+            width:100%;
+            float: left;
+            border:0;
+            height:30px;
+            line-height: 30px;
+            margin: 0 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+    <div class="x-input">
+        <div class="wrapx">
+            <span></span>
+            <input type="text" />
+        </div>
+    </div>
+    </div>
+</body>
+</html>

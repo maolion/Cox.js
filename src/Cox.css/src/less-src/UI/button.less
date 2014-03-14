@@ -40,52 +40,53 @@
     .borderRadius(4px);
     .transition(all ease @UI_BUTTON_TRANSITION_SPEED);
     .userSelect(none);
-}
-.button.block{
-    display: block!important;
-    width: 100%!important;
-}
-.button.icon-text,
-.button.icon{
-    width: auto;
-    height: auto;
-}
-.button.noradius{
-    .borderRadius(0);
-}
-.button i{
-    margin: 3px;
-}
-.button.icon-text i{
-    display: block;
-    text-align: center;
-    margin-bottom: 2px;
-}
 
-a.button.block{
-    *width:auto!important;
-}
-.button[disabled], .button.disabled{
-    pointer-events: none;
-    color:#BFBFBF;
-    cursor: default;
-}
+    &.block{
+        display: block!important;
+        width: 100%!important;
+    }
+    &.icon-text, &.icon{
+        width: auto;
+        height: auto;
+    }
+    &.noradius{
+        .borderRadius(0);
+    }
+    i{
+        margin:3px;
+    }
+    &.icon-text i{
+        display: block;
+        text-align: center;
+        margin-bottom: 2px;    
+    }
+    &[disabled], &.disabled {
+        pointer-events: none;
+        color:#BFBFBF;
+        cursor: default;
+        background-color: lighten(#8b9aa3, 30%) !important;
+    }
 
-.button:active, .button.active{
-    left: 1px;
-    top: 1px;
-}
+    &:active, &.active{
+        left: 1px;
+        top: 1px;
+    }
+    &[disabled]:active,
+    &[disabled].active,
+    &.disabled:active,
+    &.disabled.active{
+        left: 0px !important;
+        top: 0px !important;
+    }
+    &.noindent:active, &.noindent.active {
+        left:0 !important;
+        top:0 !important;
+    }
+    &.noindent:active, &.noindent.active {
+        left:0 !important;
+        top:0 !important;
+    }
 
-.button[disabled]:active,
-.button[disabled].active,
-.button.disabled:active,
-.button.disabled.active{
-    left: 0px !important;
-    top: 0px !important;
-}
-.button.noindent:active, .button.noindent.active {
-    left:0 !important;
-    top:0 !important;
 }
 
 .UIButton>.newTheme(escape(''), #8b9aa3);

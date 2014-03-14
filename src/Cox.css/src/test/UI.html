@@ -1,14 +1,40 @@
 <!DOCTYPE html>
-<html>
+<!--[if lt IE 7]>      <html class="lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class=""> <!--<![endif]-->
 <head>
     <meta content="text/html; charset=UTF-8" http-equiv="content-type">
     <title>Untitled</title>
     <link rel="stylesheet" type="text/css" href="../build/Cox.css" />
     <link rel="stylesheet" type="text/css" href="../build/UI.css" />
     <link rel="stylesheet" type="text/css" href="../build/theme.css" />
-    <link rel="stylesheet" type="text/css" href="../libs/font-awesome-4.0.3/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="../libs/font-awesome-4.0.3/css/font-awesome.min.css" />
     <style>
-        
+        .r1{
+            height:200px;
+            padding-left:200px;
+            background: red;
+            z-index: 1;
+            position: relative;
+        }
+        .c1{
+            width:200px;
+            height:100%;
+            float: left;
+            display: inline;
+            margin-left: -200px;
+            background: blue;
+        }
+        .c2{
+            width:100%;
+            float: left;
+            height:100%;
+            background: yellow;
+        }
+        /*div.input-text{
+            background: red;
+        }*/
     </style>
 </head>
 <body>
@@ -85,5 +111,51 @@
             <button class="button red large noradius">Hello</button>
         </div>
     </div>
+    <div class="example">
+        <div>
+            <h5>input.input-text</h5>
+            <input type="text" class="input-text" />
+            <h5>input.inpu-text.error</h5>
+            <input type="text" class="input-text error" />
+            <h5>input.input-text.warning</h5>
+            <input type="text" class="input-text warning" />
+            <h5>input.input-text.success</h5>
+            <input type="text" class="input-text success" />
+            <h5>input.input-text.info</h5>
+            <input type="text" class="input-text info" />
+        </div>
+    </div>
+    <div class="example">
+        <h5>x-input-text</h5>
+        <div class="x-input-text">
+            <span class="addon"><i class="fa fa-maxcdn"></i></span>
+            <input type="text" class="input-text" />
+        </div>
+        <h5>x-input-text.right</h5>
+        <div class="x-input-text right">
+            <input type="text" class="input-text" />
+            <span class="addon"><i class="fa fa-maxcdn"></i></span>
+        </div>
+        <h5>x-input-text.right input[readonly]</h5>
+        <div class="x-input-text">
+            <span class="addon"><i class="fa fa-maxcdn"></i></span>
+            <input type="text" class="input-text readonly" readonly value="hello" />
+        </div>
+        <h5>x-input-text.right input[disabled]</h5>
+        <div class="x-input-text">
+            <span class="addon"><i class="fa fa-maxcdn"></i></span>
+            <input type="text" class="input-text disabled" disabled value="hello" />
+        </div>
+        <h5>div.input-text</h5>
+        <div class="input-text">
+            <i class="fa fa-maxcdn"></i>
+            <input type="text" />
+        </div>
+    </div>  
+    <!--<div class="r1">
+        <div class="c1"></div>
+        <div class="c2"></div>
+    </div>-->
+    <a href="http://www.codefans.net/jscss/code/3041.shtml">http://www.codefans.net/jscss/code/3041.shtml</a>
 </body>
 </html>

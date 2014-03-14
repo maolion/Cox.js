@@ -35,15 +35,16 @@
         @{button}{
             background-color: @color;
         }
-        @{button}[disabled], @{button}.disabled {
-            background-color: lighten(@color, 30%) !important;
-        }
         @{button}:hover, @{button}.hover {
             background-color: lighten(@color, -5%);
         }
 
         @{button}:active, @{button}.active {
             background-color: lighten(@color, -15%);
+        }
+
+        @{button}[disabled], @{button}.disabled {
+            background-color: lighten(@color, 30%) !important;
         }
     }
     
@@ -65,6 +66,27 @@
             _height: @height - 10;
             line-height: @height - 10;
             overflow: visible;
+        }
+    }
+}
+
+
+
+
+.UIInput{ 
+    .newTheme(@name, @tcolor, @bcolor) {
+        @input: ~`".input-text" + "@{name}"`;
+        @{input} {
+            color: @tcolor !important;
+            border-color: lighten(@bcolor, 20%) !important;
+            //background-color: lighten(@bcolor, 35%);
+        }
+        @{input}:focus, @{input}:hover,
+        @{input}.focus, @{input}.hover{
+            border-color: lighten(@bcolor, 0%)!important;
+        }
+        @{input}:focus, @{input}.focus{
+            background-color: #fff!important;
         }
     }
 }

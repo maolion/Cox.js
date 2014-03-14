@@ -18,7 +18,9 @@
 
 @import "variables.less";
 @import "utils.less";
-
+*, *:before, *:after{
+    .boxSizing(border-box);
+}
 body{
     background: @BODY_BACKGROUND; 
     color: @BASE_FONT_COLOR;
@@ -102,6 +104,29 @@ ul.inline li, ol.inline li {
     padding-right: 5px;
 }
 
+dl{
+    &.horizontal {
+        display: block;
+        _zoom:1;
+    }
+
+    &.horizontal dt {
+        float: left;
+        width: 160px;
+        line-height: 20px;
+        overflow: hidden;
+        clear: left;
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &.horizontal dd {
+        margin-left: 180px;
+        display: block;
+    }    
+}
+
 dt, dd {
     line-height: @BASE_LIST_LINE_HEIGHT;
 }
@@ -113,26 +138,6 @@ dd {
     margin-left: 10px;
 }
 
-dl.horizontal {
-    display: block;
-    _zoom:1;
-}
-
-dl.horizontal dt {
-    float: left;
-    width: 160px;
-    line-height: 20px;
-    overflow: hidden;
-    clear: left;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-dl.horizontal dd {
-    margin-left: 180px;
-    display: block;
-}
 
 
 code { 
@@ -143,39 +148,17 @@ pre{
     margin-top: 10px;
     margin-bottom: 10px;
 }
+span{
+    &.icon-label{
+        display: inline-block;
+        line-height: @BASE_LIST_LINE_HEIGHT;
+    }
+    &.icon-label i{
+        vertical-align: middle;
+        font-size: @TEXT_LABEL_ICON_SIZE;
+    }
+}
 
-span.icon-label{
-    display: inline-block;
-    line-height: @BASE_LIST_LINE_HEIGHT;
-}
-span.icon-label i{
-    vertical-align: middle;
-    font-size: @TEXT_LABEL_ICON_SIZE;
-}
-
-textarea, input[type="text"], input[type="password"], input[type="datetime"], 
-input[type="datetime-local"], input[type="date"], input[type="month"], 
-input[type="time"], input[type="week"], input[type="number"], input[type="email"], 
-input[type="url"], input[type="search"], input[type="tel"], input[type="color"] {
-    //border-radius: 0!important;
-    color: #666;
-    background-color: #fff;
-    border: 1px solid #d5d5d5;
-    padding: 5px 4px;
-    _zoom: 1;
-    line-height: @BASE_LINE_HEIGHT - 10;
-    height: @BASE_LINE_HEIGHT;
-    font-size: 1.3em;
-    font-family: inherit;
-    -webkit-box-shadow: none!important;
-    box-shadow: none!important;
-    .borderRadius(2px);
-    .transition(duration, .1s);
-
-}
-input.text{
-    height:5000px;
-}
 /**
  * text-left 文本左对齐
  * @example
