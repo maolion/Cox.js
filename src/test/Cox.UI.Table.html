@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="lt-ie9 lt-ie8 lt-ie7" xmlns="http://www.w3.org/1999/xhtml"> <![endif]-->
+<!--[if IE 7]>         <html class="lt-ie9 lt-ie8" xmlns="http://www.w3.org/1999/xhtml"> <![endif]-->
+<!--[if IE 8]>         <html class="lt-ie9" xmlns="http://www.w3.org/1999/xhtml"> <![endif]-->
+<!--[if gt IE 8]><!--> <html xmlns="http://www.w3.org/1999/xhtml"> <!--<![endif]-->
+<head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+    
+    <title>Untitled</title>
+    <link rel="stylesheet" href="./libs/font-awesome/css/font-awesome.css" />
+    <!--
+    <link rel="stylesheet" href="./libs/font-awesome/css/font-awesome.css" />
+    <link rel="stylesheet" href="http://192.168.1.134/ec/libs/Cox/css/build/Cox.css" />
+    <link rel="stylesheet" href="http://192.168.1.134/ec/libs/Cox/css/build/UI.css" />
+    <link rel="stylesheet" href="http://192.168.1.134/ec/libs/Cox/css/build/theme.css" />-->
+    <link rel="stylesheet" href="http://127.0.0.1:9002/libs/Cox/css/build/Cox.css" />
+    <link rel="stylesheet" href="http://127.0.0.1:9002/libs/Cox/css/build/UI.css" />
+    <link rel="stylesheet" href="http://127.0.0.1:9002/libs/Cox/css/build/theme.css" />
+    
+    <script src="../debug/Cox.js" cox-path="../; Cox=../modules"></script>
+    <script>
+        Use(["~/Cox/Extends/jQuery", "~/Cox/UI/Table"], function(require)
+        {
+            var 
+                jQuery = require("jQuery"),
+                Table  = require("Table"),
+                v      = new Table(jQuery("table")),
+                data   = []
+            ;
+            for (var i = 0; i < 10; i++)
+            {
+                data.push({
+                    ID    : "abcdefg" + i,
+                    order : i + 1,
+                    user  : "Jiang" + i,
+                    sex   : "Man" + i,
+                    age   : "21",
+                    email : "maolion.j@gmail.com" + i,
+                    phone : "18650963830"
+                });
+            }
+            
+            v.append(data);
+            /*v.update([
+                {
+                    ID    : "abcdefg0",
+                    order : 1,
+                    user  : "Jiang",
+                    sex   : "man",
+                    age   : "21",
+                    email : "maolion.j@gmail.com",
+                    phone : "18650963830"
+                },
+                {
+                    ID    : "abcdefg2",
+                    order : 1,
+                    user  : "Jiang",
+                    sex   : "man",
+                    age   : "21",
+                    email : "maolion.j@gmail.com",
+                    phone : "18650963830"
+                }
+            ]);*/
+
+            v.on("selectedRow", function()
+            {
+                console.log(v.getSelected());
+            });
+            //v.rowMovesUp(0);
+            //v.rowMovesUp(v.find("abcdefg8"));
+        });
+    </script>
+    <style>
+        body{
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="example">
+        <table class="table">
+            <thead>
+                <th name="order" class="sort" format="number right" width="70px">序列号</th>
+                <th name="user" class="sort" width="150px">用户名</th>
+                <th name="sex" width="50px">性别</th>
+                <th name="age" class="center" width="50px">年龄</th>
+                <th name="email" width="200px">Email</th>
+                <th name="phone" width="150px">电话</th>
+                <th name="-" class="checkbox"><input type="checkbox" /></th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</body>
+</html>

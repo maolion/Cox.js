@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+    
+    <title>Untitled</title>
+    <style>
+        .list{
+            display: block;
+        }
+        .list li{
+            display: block;
+            line-height: 40px;
+            border-bottom: 1px solid #ccc;
+        }
+        .list li span{
+            display: inline-block;
+            margin-left: 20px;
+            color:green;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+    <script src="../debug/Cox.js" cox-path="./;Cox=../modules"></script>
+    <script type="text/javascript">
+
+        Use(["~/Cox/Net/Loader", "~/Cox/Extends/jQuery"], function(require)
+        {
+            var 
+                Loader = require("Loader"),
+                jQuery = require("jQuery"),
+                data   = ["http://www.boxui.com/blog/wp-content/themes/boxui_waterfall/timthumb.php?sr…m/blog/wp-content/uploads/2014/03/144820qfd.jpg&w=585&h=390&zc=1&q=100&a=t", "http://www.boxui.com/blog/wp-content/themes/boxui_waterfall/timthumb.php?sr…m/blog/wp-content/uploads/2014/03/094343hk7.jpg&w=585&h=390&zc=1&q=100&a=t", "http://www.boxui.com/blog/wp-content/themes/boxui_waterfall/timthumb.php?sr…m/blog/wp-content/uploads/2014/03/094439O3Q.jpg&w=585&h=390&zc=1&q=100&a=t", "http://www.boxui.com/blog/wp-content/themes/boxui_waterfall/timthumb.php?sr…m/blog/wp-content/uploads/2014/03/073935xQL.jpg&w=585&h=390&zc=1&q=100&a=t", "http://www.boxui.com/blog/wp-content/uploads/2014/03/144432OZI-boxuiW285boxuiH187.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/145040rIq-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/1444496Zv-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/144542bRb-boxuiW285boxuiH285.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/144820qfd-boxuiW285boxuiH219.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/143927wH4-boxuiW285boxuiH302.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/143653gpv-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/103150kSg-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/142512zVI-boxuiW285boxuiH137.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/150834M7T-boxuiW285boxuiH151.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/233428N6Z-boxuiW285boxuiH190.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/094343hk7-boxuiW285boxuiH158.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/094439O3Q-boxuiW285boxuiH269.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/073718nbf-boxuiW285boxuiH152.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/073935xQL-boxuiW285boxuiH160.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/094121yy8-boxuiW285boxuiH153.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/093710lYU-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/145113dKl-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/144906cKj-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/144707Xtl-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/144639ZjR-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/145207X3Q-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/0858273i6-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/061959cwp-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/062159AzT-boxuiW285boxuiH218.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/062432BLH-boxuiW285boxuiH186.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/0154337Qh-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/1321151hN-boxuiW285boxuiH151.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/151146U4i-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/150730wl1-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/151102LhI-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/150536UPA-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/020017hnV-boxuiW285boxuiH153.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/014815Tx6-boxuiW285boxuiH88.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/033443tJN-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/043012f4c-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/042434GWY-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/043202ppY-boxuiW285boxuiH209.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/042320CVp-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/03/04195552H-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/145033bEW-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/m_1392195718905-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/094203AmD-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/m_1391839682945-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/1449334wq-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/042440LjS-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/033036V4N-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/032206igA-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/124802mHw-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/145516fJM-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/123902nek-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/124936zcM-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/124454trQ-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/1258063TV-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/131337iLY-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/012422T3j-boxuiW285boxuiH82.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/012823FJZ-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/130706HRs-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/144447ftn-boxuiW285boxuiH320.jpg", "http://www.boxui.com/blog/wp-content/uploads/2014/02/054614MkB-boxuiW285boxuiH140.jpg"],
+                body = jQuery(document.body),
+                imgs = new Loader.ImageLoader(1),
+                css  = new Loader.CSSLoader(1),
+                js   = new Loader.ScriptLoader(1)
+            ;
+            css.on("next", function()
+            {
+                //console.log(arguments);
+            });
+            css.on("pass", function(state, src)
+            {
+                //console.log(arguments);
+                jQuery(document.body).append("<p>" + src + ":" + (state ? "ok" : "error") + "</p>");
+            });
+            //css.load("1.css", "2.css", "3.css", "4.css", "5.css");
+            js.on("pass", function(state, src)
+            {
+                //console.log(arguments);
+                jQuery(document.body).append("<p>" + src + ":" + (state ? "ok" : "error") + "</p>");
+            });
+            //js.load("1.js", "2.js", "3.js", "4.js", "5.js");
+
+            Loader.load("1.js", "2.css", "6.css", "7.js", "3.js").then(
+                function()
+                {
+                    console.log("x");
+                },
+                function()
+                {
+                    console.log(arguments);
+                }
+            );
+            
+            //, "2.css", "3.css", "4.css", "5.css"
+            /*XList.forEach(data, function(item)
+            {
+                body.append('<img src="" data-src="'+item+'" />')
+            });
+            imgs.load(jQuery("img"));*/
+            /*var st = new Date;
+            var et = null;
+            imgs.on("done", function()
+            {
+                alert(new Date - st);
+            });*/
+        });
+    </script>
+    <ul class="list">
+        <li>1.css<span class="css1">loaded</span></li>
+        <li>2.css<span class="css2">loaded</span></li>
+        <li>3.css<span class="css3">loaded</span></li>
+        <li>4.css<span class="css4">loaded</span></li>
+        <li>5.css<span class="css5">loaded</span></li>
+    </ul>
+    <ul class="list list2">
+        <li>1.js<span id="js1">loaded</span></li>
+        <li>2.js<span id="js2">loaded</span></li>
+        <li>3.js<span id="js3">loaded</span></li>
+        <li>4.js<span id="js4">loaded</span></li>
+        <li>5.js<span id="js5">loaded</span></li>
+    </ul>
+</body>
+</html>

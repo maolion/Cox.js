@@ -2050,6 +2050,7 @@
          */
         BaseClass.prototype.Super = function ( key, args ){
             var 
+                key    = key || "constructor",
                 args   = SLICE.call( arguments, 1 ),
                 info   = this.constructor.__COX_CLASS_CLASSINFO__,
                 _super = null,
@@ -2071,18 +2072,31 @@
             }
 
             _super = this.__COX_CSLEVEL__;
-            sinfo  = _super.__COX_CLASS_CLASSINFO__;
             
             if( _super ){
-                if( key === "CONSTRUCTOR" && sinfo ){
-                    prop  = sinfo[ key ];
-                }else{
-                    if( !( key in _super.prototype )  ){ 
-                        throw new Error(
-                            "在 " + _super + "类 中没有定义 `" + key + "`成员"
-                        );
+                sinfo  = _super.__COX_CLASS_CLASSINFO__;
+                while(1) {
+                    var next = false;
+                    if (key === "CONSTRUCTOR" && sinfo) {
+                        prop = sinfo.CONSTRUCTOR;
+                        next = prop === info.CONSTRUCTOR.__ORIGIN__ || prop === info.CONSTRUCTOR;
+                    } else {
+                        prop = _super.prototype[key];
+                        next = prop instanceof Function && this[key] === prop;
                     }
-                    prop = _super.prototype[key];
+                    if (next) {
+                        _super = sinfo && sinfo.SUPER;
+                        if (!_super) throw new Error("Super函数被非法使用!");
+                        sinfo = _super.__COX_CLASS_CLASSINFO__;
+                        continue;
+                    }
+                    break;
+                }
+
+                if( key !== "CONSTRUCTOR" && !(key in _super.prototype)  ){ 
+                    throw new Error(
+                        "在 " + _super + "类 中没有定义 `" + key + "`成员"
+                    );
                 }
 
                 if( typeof prop === "function" ){
@@ -2180,8 +2194,10 @@
                 }
 
                 //子类只有得到父类高级函数的克隆版本才能被正常使用
-                if( superinfo && typeof superinfo.CONSTRUCTOR === "function" ){
-                    constructor = superinfo.CONSTRUCTOR.clone ? superinfo.CONSTRUCTOR.clone() : constructor;
+                if(superinfo && typeof superinfo.CONSTRUCTOR === "function"
+                && superinfo.CONSTRUCTOR.clone){
+                    constructor = superinfo.CONSTRUCTOR.clone();
+                    constructor.__ORIGIN__ = superinfo.CONSTRUCTOR;
                 }
 
                 //复制父类的类成员到子类上
@@ -2327,7 +2343,7 @@
                 } 
             )
 
-            Public.stopPropagation = function(){
+            Public.stopPropagation = Public.cancel = function(){
                 this.listener.cancle();
             };
         } );
@@ -2814,7 +2830,7 @@
 
         //依赖于环境的常量值
         if( isBrowser ){
-            REL             = GLOBAL.document.documentElement;
+            REL             = GLOBAL.document.documentElement.getElementsByTagName("HEAD")[0];
             LOCA_URL        = GLOBAL.location.href;
             LOCA_PROTOCOL   = LOCA_URL.match( RE_PROTOCOL_SIGN )[0];
             LOCA_ROOT       = LOCA_URL.match( RE_URL_ROOT )[1];
@@ -3028,7 +3044,7 @@
                         loader.setAttribute( "defer"  , "true" );
                         loader.setAttribute( "src"    , url );
 
-                        REL.firstChild.insertBefore( loader, null );
+                        REL.insertBefore( loader, null );
 
                         function loaded(){ 
                             if( loader.addEventListener 
