@@ -31,7 +31,7 @@
  * ----------------------------------------------------------------------------
  *
  * -   Date 2013/11/1
- * -   Version v1.1
+ * -   Version v1.2
  * -   Author maolion.j@gmail.com
  * -   website http://maolion.com
  *
@@ -54,7 +54,7 @@
         undefined             = void 0,
         isNode                = typeof require === "function" && global.require !== require,
         isBrowser             = typeof window === "object"  && window === GLOBAL,
-        Cox                   = { VERSION : "1.1.0" },
+        Cox                   = { VERSION : "1.2.0" },
         newObject             = null,
         //主要功能模块（对外接口）
         _KeyWord              = null,
