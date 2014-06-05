@@ -30,13 +30,12 @@
  *
  * ----------------------------------------------------------------------------
  *
- * -   Date 2013/11/1
- * -   Version v1.2
+ * -   Date 2014/6/5
+ * -   Version v1.3
  * -   Author maolion.j@gmail.com
  * -   website http://maolion.com
  *
  */
-
 ;void function(){
     var 
         //常量
@@ -54,8 +53,9 @@
         undefined             = void 0,
         isNode                = typeof require === "function" && global.require !== require,
         isBrowser             = typeof window === "object"  && window === GLOBAL,
-        Cox                   = { VERSION : "1.2.0" },
+        Cox                   = { VERSION : "1.3.0" },
         newObject             = null,
+        gunit                 = null,
         //主要功能模块（对外接口）
         _KeyWord              = null,
         _XObject              = null,
@@ -91,7 +91,6 @@
         _Modules              = null
     ;
 
-    
     //创建一个新对象，并将指定对象作用于新对象原型链上   
     newObject = Object.create || (function(){
         function co_bridge(){};
@@ -100,10 +99,6 @@
             return new co_bridge;
         }
     }());
-
-
-    //gunit.subUnit( "newObject" ).test();
-    
     //创建对象工厂类
     function ObjectFactory( factory, extend ){
         var 
@@ -245,9 +240,7 @@
 
             return true;
         };
-    
     }();
-    //gunit.subUnit( "KeyWord" ).test();
 
     /*
      * 提供了一套常用的基础工具组件
@@ -298,7 +291,6 @@
         _PlainObject.__instancelike__ = function( obj ){
             return obj && obj.constructor === Object;
         };
-
         _Type = _KeyWord( "Type", _KeyWord.DATATYPE, function Type(){
             return Function.apply( null, arguments );
         } );
@@ -309,8 +301,6 @@
                 typeof type.__instancelike__ === "function" 
             );
         }
-
-
         /**
          * Null 空数据类型
          */
@@ -326,7 +316,6 @@
         _Null.__instancelike__ = function( obj ){
             return obj === null || obj === undefined;
         };
-
         /**
          * XObject 提供一些用于操作对象数据的一些静态方法集，通过 XObject构
          * 造出的对象与普通对象无任何差别
@@ -341,7 +330,7 @@
          * XObject.create 创建一个新对象，并将指定对象作用于新对象原型链上
          * @example
          *  var obj = null;
-         *  obj = _XObject.create( { 
+         *  obj = XObject.create( { 
          *      p1 : 1
          *      m1 : function(){ return this.p1; }
          *  } );
@@ -378,6 +367,7 @@
          *      //...
          *  } );
          */
+
         _XObject.forEach = [
             function (obj, onlyself, callback, thisp)
             {
@@ -470,7 +460,7 @@
          * @param { Object } obj 
          * @return { Array }
          * @example
-         *  var objkeys = _XObject.keys( { p1 : 1, p2 : 2 } );
+         *  var objkeys = XObject.keys( { p1 : 1, p2 : 2 } );
          */
         _XObject.keys = function kyes( obj ){
             var keys = [];
@@ -641,13 +631,10 @@
             return obj instanceof String || typeof obj === "string";
         };
 
-
-        //util_unit.subUnit( "XString" ).test();
-
         _XList = _KeyWord( "XList", _KeyWord.DATATYPE , function XList(){
             return Array.apply( null, arguments );
         } );
-        
+
         /**
          * XList.forEach 对有序列表时行遍历，并将指定的回调函数作用于每一
          * 列表项上
@@ -786,7 +773,7 @@
          * @param { Array } list
          * @param { Function } callback
          * 回调函数的参数列表依次为：[ 项值，项索引，有序列表 ] .
-         * @param { Object } thisp 回调函数 内部 this 指向(默认为环境全局对
+         * @param { Object } thisp 回调函数 内部 this 指向(c
          * 象) 
          * @return { Array }
          * @example
@@ -962,6 +949,7 @@
             return obj instanceof Array;
         };
 
+
         /**
          * is 用于判断指定对象与某一类的关系
          * @param { Function/Class } type 指定类型
@@ -996,7 +984,6 @@
             }
 
         };
-
     }();
 
 
@@ -1102,9 +1089,6 @@
                 " )" );
             }, ParamTypeModifier )
         );
-        
-
-
         /**
          * Params 可变参数集
          * @param { Type } type 类型
@@ -1137,7 +1121,6 @@
             }
             return true;
         };
-
         /**
          * ParamTypeTable 参数类型表
          * @param { Type } types [ Type, Type, ... ]
@@ -1306,8 +1289,6 @@
             return this.__COX_SIGN__;
         };
 
-        //XFunction_unit.subUnit( "ParamTypeTable" ).test();
-
         METHODS    = {
             /**
              * define 定义重载
@@ -1375,7 +1356,27 @@
                 func.__COX_SIGN__                    = this.__COX_SIGN__;
                 return func;
             },
-
+            /**
+             * func 根据传递的参数获得相应的处理函数
+             * @param {Array}  args 
+             * @return {Function}
+             */
+            func : function(args)
+            {
+                var 
+                    list      = this.__COX_XFUNCTION_OVERLOAD_LIST__,
+                    handler   = null
+                ;
+                //从重载列表中找到能处理传递参数的处理程序
+                for( var i = 0, l = list.length; i < l; i++  ){
+                    var types = list[i];
+                    if( types.parse( args ) ){
+                        handler = types.__COX_BUILD_HANDLER__;
+                        break;
+                    }
+                }
+                return handler;
+            },
             toString : function toString(){
                 return this.__COX_SIGN__;
             }
@@ -1481,6 +1482,10 @@
 
         };
 
+        _XFunction.__instancelike__ = function(obj) {
+            return obj instanceof Function && obj.__COX_XFUNCTION_OVERLOAD_LIST__ instanceof Array;
+        }
+
     }();
     
     /*
@@ -1520,7 +1525,6 @@
                 this.interfaces = interfaces;
             } )
         );
-
 
         /**
          * Interface 接口定制工具
@@ -1746,7 +1750,7 @@
 
         _Abstract.newClass = function newClass(){   
             return function(){
-                throw new SynataxError(
+                throw new SyntaxError(
                     "抽象类不允许被实例化！"
                 );
             };
@@ -2079,7 +2083,11 @@
                     var next = false;
                     if (key === "CONSTRUCTOR" && sinfo) {
                         prop = sinfo.CONSTRUCTOR;
-                        next = prop === info.CONSTRUCTOR.__ORIGIN__ || prop === info.CONSTRUCTOR;
+                        if (_is(_XFunction, prop) && _is(_XFunction, info.CONSTRUCTOR)) {
+                            next = prop.func(args) === info.CONSTRUCTOR.func(args);
+                        } else {
+                            next = prop === info.CONSTRUCTOR;
+                        }
                     } else {
                         prop = _super.prototype[key];
                         next = prop instanceof Function && this[key] === prop;
@@ -2332,7 +2340,7 @@
             };
 
         } );
-        
+
         _Class( "Event", _Entity, null, _Implements( IEvent ), function( Static, Public ){
             _Event = this;
             Public.constructor = _XFunction( 
@@ -2465,7 +2473,8 @@
             Public.once = Public.addOnceEventListener;
             Public.un   = Public.removeEventListener;
         } );
-        
+
+
         /**
          * Deferred 延迟操作管理类
          */
@@ -2523,6 +2532,7 @@
                             error && error.call( this, this._value, this._error );
                         break;
                     }
+                    return this;
                 } 
             );
 
@@ -2562,6 +2572,7 @@
                         stop = true;
                         event.stopPropagation();
                     };
+                    return this;
                 }
             );
 
@@ -2652,6 +2663,7 @@
 
         } );
         
+
         /**
          * Class: DeferredList 延迟操作组管理类
          * @param { Params( Deferred ) } deferredlist
@@ -2738,6 +2750,7 @@
                         deferred.resolved( value );
                     }
                 }
+
             };
 
             /**
@@ -2801,10 +2814,12 @@
             RE_URL_ROOT        = /^(\w+:\/{2,3}[^\/]+)/,
             RE_URL_PARAMS      = /(?:\?([^#]*))?(#.*)?$/,
             RE_DIR_NAME        = /^(.*)\/.*$/,
-            RE_MODULE_NAME     = /^[\w.]+$/,
+            RE_MODULE_URL      = /^~\/(?:[a-zA-Z0-9_\-\.]+?\/?)+$/,
+            RE_MODULE_NAME     = /^[a-zA-Z_][a-zA-Z0-9_\.]*$/,
             RE_PATH_SEP        = /\\{1,}/g,
             RE_ROOT_PATH_SEP   = /\s*;\s*/,
             RE_KV_SEP          = /\s*=\s*/,
+            DOC                = null,
             REL                = null,
             LOCA_URL           = null,
             LOCA_PROTOCOL      = null,
@@ -2819,7 +2834,6 @@
                 debug       : false,
                 roots       : {}
             },
-            amd_unit = null,
             UID  = function(){
                 var uid = new Date().getTime();
                 return function(){
@@ -2830,7 +2844,9 @@
 
         //依赖于环境的常量值
         if( isBrowser ){
-            REL             = GLOBAL.document.documentElement.getElementsByTagName("HEAD")[0];
+            DOC             = GLOBAL.document,
+            REL             = DOC.head || DOC.getElementsByTagName("HEAD")[0] || DOC.documentElement;
+            REL.BASE_EL     = REL.getElementsByTagName('base')[0];
             LOCA_URL        = GLOBAL.location.href;
             LOCA_PROTOCOL   = LOCA_URL.match( RE_PROTOCOL_SIGN )[0];
             LOCA_ROOT       = LOCA_URL.match( RE_URL_ROOT )[1];
@@ -2944,7 +2960,7 @@
                 cache    = {}
             ;
 
-            return function require( uri ){
+            return function require( uri, exports, getDefine ){
                 var 
                     module = cache[ uri ],
                     define = null
@@ -2977,27 +2993,47 @@
                     );
                 }
 
-                if( !module.exports ){
-                    module.exports = {};
+                if( exports || !module.exports ){
+                    module.exports = exports || {};
                 }
 
                 if( typeof module.define !== "function" ){
                     return module.exports;
                 }
-
                 define = module.define;
-                delete module.define;
-                module.__define = define;
-                //调用模块的定义体
-                define( 
-                    _require( module ),
-                    module.exports, 
-                    module, 
-                    module.url,
-                    dirname( module.url )
-                );
-
-                return module.exports;
+                var 
+                    __dir__     = dirname(module.url),
+                    __file__    = module.url,
+                    __require__ = _require(module),
+                    exports     = module.exports
+                ;
+                if (!getDefine) {
+                    delete module.define;
+                    module.__define = define;
+                    //调用模块的定义体
+                    define.call( 
+                        exports,
+                        __require__,
+                        exports, 
+                        module, 
+                        __file__,
+                        __dir__
+                    );
+                    return module.exports;
+                } else {
+                    return function() {
+                        define.call( 
+                            exports,
+                            __require__,
+                            exports,
+                            module, 
+                            __file__,
+                            __dir__
+                        );
+                        
+                        return module.exports;
+                    };
+                }
             };
         }
 
@@ -3044,19 +3080,23 @@
                         loader.setAttribute( "defer"  , "true" );
                         loader.setAttribute( "src"    , url );
 
-                        REL.insertBefore( loader, null );
+                        REL.BASE_EL ? 
+                            REL.insertBefore(loader, baseElement) :
+                            REL.appendChild(loader)
+                        ;
+                        //REL.insertBefore( loader, null );
 
                         function loaded(){ 
                             if( loader.addEventListener 
                              || loader.readyState === "loaded" 
                              || loader.readyState === "complete" 
                             ){
+                                !GLOBAL.DEBUG && REL.removeChild(loader);
                                 delete loading_modules[ module.id ];
                                 loaded_modules[ module.id ] = module;
                                 if( !module.loaded.isDone() ){
-                                    //console.log( module );
                                     module.loaded.resolved();
-                                    module.resolved();
+                                    !module.isDone() && module.resolved();
                                 }
 
                                 if( loader.removeEventListener ){
@@ -3065,10 +3105,12 @@
                                 }else{
                                     loader.detachEvent( "onreadystatechange", loaded );
                                 }
+                                GLOBAL.DEBUG && console.log(module.url, "loaded");
                             }
                         }
 
                         function loadfail(){
+                            !GLOBAL.DEBUG && REL.removeChild(loader);
                             delete loading_modules[ module.id ];
 
                             if( loader.removeEventListener ){
@@ -3078,8 +3120,12 @@
                                 loader.detachEvent( "onreadystatechange", loaded );
                                 loader.detachEvent( "error", loadfail );
                             }
-
-                            module.loaded.rejected();
+                            module.loaded.rejected({
+                                id      : module.id,
+                                url     : module.url,
+                                module  : module,
+                                message : "无法添加该模块"
+                            });
                         }                
                     }
 
@@ -3112,7 +3158,12 @@
                         //console.log( module.id );
                         loaded_modules[ module.id ] = module;
                     }catch( e ){
-                        module.loaded.rejected();
+                        module.loaded.rejected({
+                            id      : module.id,
+                            url     : module.url,
+                            module  : module,
+                            message : "无法添加该模块"
+                        });
                         module.rejected();
                         throw e;
                     }finally{
@@ -3154,30 +3205,37 @@
                         pmodules = []
                     ;
                     //将每一个依赖模块的依赖模块关联到指定模块上
-                    dmodules && _XObject.forEach( dmodules, true, function( dm, id ){
-                        dm             = ModuleCenter.getModule( dm.id ) || dm;
-                        dmodules[ id ] = dm;
-                        id             = dm.id;
-                        if( id !== module.id
-                         && !( pending.list[ id ] instanceof Module )
-                        ){
-                            pending.list[ id ] = dm;
-                            pending.length++;
-                            pmodules.push( dm );
-                        }
-                    } );
-
-                    pmodules.length && _XList.forEach( pmodules, function( pm ){
-                        pm.loaded.then(
-                            function(){
-                                pending.length--;
-                                link( module, pm, pending );
-                            },
-                            function( value ){
-                                module.rejected( value );
+                    if (dmodules) {
+                        for (var id in dmodules) {
+                            if (!dmodules.hasOwnProperty(id)) continue;
+                            var 
+                                dm = dmodules[id]
+                                dm = dmodules[id] = ModuleCenter.getModule(dm.id) || dm,
+                                id = dm.id
+                            ;
+                            if( id !== module.id
+                             && !( pending.list[ id ] instanceof Module )
+                            ){
+                                pending.list[ id ] = dm;
+                                pending.length++;
+                                pmodules.push( dm );
                             }
-                        );
-                    } );
+                        }
+                    }
+                    if (pmodules.length){
+                        for (var i = pmodules.length; --i>=0; ) {
+                            var pm = pmodules[i];
+                            pm.loaded.then(
+                                function(){
+                                    pending.length--;
+                                    link( module, pm, pending );
+                                },
+                                function( value ){
+                                    !module.isDone() && module.rejected( value );
+                                }
+                            );
+                        }
+                    }
 
                     //当所有依赖模块被准备完毕之时
                     if( pending.length === 0 && pending.wait === null ){
@@ -3201,7 +3259,7 @@
                                 }
                             );
                         }else{
-                            module.resolved();
+                            !module.isDone() && module.resolved();
                         }
                     }
                 }
@@ -3242,9 +3300,9 @@
                                         eloaded.target = dmodule;
                                         ModuleCenter.fireEvent( "loaded", [ eloaded ] );
                                     },
-                                    function(){
+                                    function(error){
                                         eerror.target = dmodule;
-                                        ModuleCenter.fireEvent( "eerror", [ eerror ] );
+                                        ModuleCenter.fireEvent( "error", [ eerror, error ] );
                                     }
                                 );
                             }
@@ -3254,6 +3312,22 @@
                     link( module, module, pending );
                 };
             }();
+            Public.loadedModule = function(module) {
+                loaded_modules[module.id] = module;
+            }
+
+
+            Public.loadingModule = function(module)
+            {
+                var id = module.id;
+                loading_modules[id] = module;
+                module.loaded.done(function()
+                {
+                    delete loading_modules[id];
+                    loaded_modules[id] = module;
+                });
+            };
+
             /**
              * @method exists 检测某一模块是否被包含在模块管理中心里
              * @param { Module } module
@@ -3383,24 +3457,17 @@
             Module = this;
             var moduleUriFormats = [
                 {
-                    //URL
-                    pattern : /^\w+:\/{2,3}[\S]+$/,
-                    resolve : function( url ){
-                        return url;
+                    //ABSOLUTE PATH
+                    pattern : /^[A-Za-z]\:.+$/,
+                    resolve : function( path ){
+                        return path;
                     }
                 },
                 {
-                    //root
-                    pattern : /^~\/.+$/,
-                    resolve : function( uri ){
-                        var root = "~/";
-                        _XList.forEach( uri.slice( 2 ).split( "/" ), function( item, index ){
-                            if( ( root + item ) in config.roots ){
-                                root += item;
-                                return false;
-                            }
-                        } );
-                        return merge( config.roots[ root ], uri.slice( root.length ) );
+                    //global
+                    pattern : /^[\S]+$/,
+                    resolve : function( uri, root ){
+                        return "";
                     }
                 },
                 {
@@ -3414,19 +3481,27 @@
                     }
                 },
                 {
-                    //global
-                    pattern : /^[\S]+$/,
-                    resolve : function( uri, root ){
-                        return "";
+                    //root
+                    pattern : /^~\/.+$/,
+                    resolve : function( uri ){
+                        var 
+                            root  = "~/",
+                            next  = uri.slice(2),
+                            other = next.slice(0, next.indexOf("/"))
+                        ;
+                        if ((root + other) in config.roots ) {
+                            root += other;
+                        }
+                        return merge( config.roots[ root ], uri.slice( root.length ) );
                     }
                 },
                 {
-                    //ABSOLUTE PATH
-                    pattern : /^[A-Za-z]\:.+$/,
-                    resolve : function( path ){
-                        return path;
+                    //URL
+                    pattern : /^\w+:\/{2,3}[\S]+$/,
+                    resolve : function( url ){
+                        return url;
                     }
-                }
+                },
             ];
 
             function merge( root, uri ){
@@ -3454,13 +3529,15 @@
                     info = {}
                 ;
                 root = root || MODULE_ROOT;
-
-                uri && _XList.forEach( moduleUriFormats, function( format, index ){
-                    if( format.pattern.test( uri ) === true ){
-                        url = format.resolve( uri, root );
-                        return false;
+                if (uri) {
+                    for(var i = moduleUriFormats.length; --i >=0;) {
+                        var format = moduleUriFormats[i];
+                        if( format.pattern.test( uri ) === true ){
+                            url = format.resolve( uri, root );
+                            break;
+                        }    
                     }
-                }, this );
+                }
                 info.id  = url || uri;
                 info.url = url;
 
@@ -3527,16 +3604,15 @@
 
             this._uris     = uris;
             this._root     = root = root || MODULE_ROOT;
-            _XList.forEach( uris, function( uri, key ){
-                var minfo, id;
-
-                if( modules[ uri ] instanceof Module ){
-                    return;
-                }
-                minfo          = Module.resolve( uri, root );
-                id             = minfo.id;
-                modules[ uri ] = ModuleCenter.getModule( id ) || new Module( uri, root );
-            } );
+            for (var i = uris.length; --i >= 0;) {
+                var uri   = uris[i];
+                if (modules[uri] instanceof Module) 
+                    continue;
+                
+                modules[uri] = ModuleCenter.getModule(Module.resolve(uri, root).id) || 
+                               new Module(uri, root)
+                ;
+            }
             this.modules = modules;
         };
 
@@ -3592,21 +3668,24 @@
                     newmodule   = null,
                     modulename  = _XString.trim( modulename ),
                     cmodulename = new RegExp( "\/" + modulename + "(?:\.js|\.JS)?$" )
+                    isModuleURL = false
                 ;
 
-                if( !( _is( String, modulename ) ? modulename : "" ).length 
-                 || !RE_MODULE_NAME.test( modulename )
+                if( !modulename.length 
+                 || (!RE_MODULE_NAME.test(modulename) && !(isModuleURL = RE_MODULE_URL.test(modulename)))
                 ){
-                    throw new Error( "无效的模块标识符" );
+                    throw new Error("无效的模块标识符");
                 }
 
                 if( !define ){
                     throw new Error( "需要一个Function类型实例来完成模块的定义" );
                 }
-                newmodule = ModuleCenter.findInLoading( modulename ) 
+                newmodule = isModuleURL && ModuleCenter.getModule(Module.resolve(modulename).id)
+                         || ModuleCenter.findInLoading( modulename ) 
                          || ModuleCenter.findInLoading( function( module, id ){
                             return cmodulename.test( id );
-                         } );
+                         } )
+                ;
                 if( !newmodule ){
                     //对象node.js平台
                     if( isNode ){
@@ -3635,11 +3714,11 @@
                                 newmodule.exports = nmodule.exports;
                             }
 
-                            return false;
+                            return;
                         }
                     }
-
-                    newmodule = new Module( modulename, "" );
+                    newmodule = new Module( isModuleURL ? Module.resolve(modulename).url : modulename, "" );
+                    ModuleCenter.loadedModule(newmodule);
                 }
 
                 if( depend ){
@@ -3648,10 +3727,18 @@
 
                 newmodule.define = define;
                 newmodule.depend = depend;
-                newmodule.loaded.resolved();
+                !newmodule.loaded.isDone() && newmodule.loaded.resolved();
                 ModuleCenter.pending( newmodule );
             }
         );
+        
+        _Define.promise = _XFunction(_Params(String), function(uris)
+        {
+            for (var i = uris.length;--i>=0;) {
+                ModuleCenter.loadingModule(new Module(Module.resolve(uris[i]).id));
+            }
+        });
+
         /**
          * Use 使用外部的模块
          * @param { Modules } modules 外部模块列表
@@ -3727,7 +3814,6 @@
     GLOBAL.XFunction      = Cox.XFunction      = _XFunction;
     GLOBAL.Deferred       = Cox.Deferred       = _Deferred;
     GLOBAL.DeferredList   = Cox.DeferredList   = _DeferredList;
-    
     GLOBAL.forEach = Cox.forEach = _XFunction(
         Array, Function, _Optional( Object ), _XList.forEach
     );
@@ -3745,6 +3831,7 @@
                     break;
                 }
             }
+            iter.reset();
         }
     );
 
@@ -3768,7 +3855,7 @@
     GLOBAL.Define = Cox.Define = _XFunction(
         String, _Optional( _Modules ), Function, _Define
     );
-
+    GLOBAL.Define.promise = _Define.promise;
     GLOBAL.Modules = Cox.Modules = _XFunction(
         Params( String ), _Modules
     );
@@ -3795,7 +3882,7 @@
     Cox.ownDocument   = GLOBAL.document;
     Cox.ownWindow     = GLOBAL;
     _XObject.mix( GLOBAL.Modules, _Modules, true ); 
-    
     typeof exports !== "undefined" && ( module.exports = Cox );
+    
+    GLOBAL.DEBUG = true;
 }();
-

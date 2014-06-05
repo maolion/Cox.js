@@ -247,6 +247,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ----------------------------------------------------------------------------
 
 ###Cox.js 版本日志
+
+####1.3.0
+-   修复 Class中 Super方法对父接口查找的BUG, 添加 AMD 接口对多模块合并 场景的支持
+
 ####1.2.0
 -   修复核心接口中被发现的新BUG
 
@@ -264,7 +268,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---------------------------------------------------------------------------- 
 
--   Date 2013/4/27
--   Version 1.0.0 
+-   Date 2014/6/5
+-   Version 1.3.0 
 -   Author 江宜玮 <maolion.j@gmail.com>
 -   Cox.js 技术支持 QQ群：259351004

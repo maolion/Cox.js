@@ -19,11 +19,12 @@
 
 Define(
 "Form",
-Depend("~/Cox/Extends/jQuery"),
+Depend("~/Cox/Extends/jQuery", "./Form/Validation"),
 function(require, Form, module)
 {
     var 
-        jQuery = require("jQuery")
+        jQuery     = require("jQuery"),
+        Validation = require("Validation")
     ;
 
     Form = module.exports = Class("Form", Extends(Cox.EventSource), function(Static, Public)
@@ -40,18 +41,25 @@ function(require, Form, module)
             }
         ;
 
-        Public.constructor = XFunction(jQuery, function(form)
+        Public.constructor = function(form)
         {
-            var _this = this;
+            var 
+                _this = this,
+                inputs = null
+            ;
             this.Super("constructor");
             this.dispatchEvent(
+                new Cox.Event("submit"),
                 new Cox.Event("append"),
                 new Cox.Event("remove")
             );
-            this._form       = form;
+            this.form        = form;
+            this.V           = null;
             this._formAction = null;
             this._inputs     = {};
-            form.find("input, select, textarea").each(function(index, input)
+            this.tips        = {};
+            inputs = form.find("input, select, textarea");
+            inputs.each(function(index, input)
             {
                 var 
                     type = (input.getAttribute("type") || "").toLowerCase(),
@@ -64,10 +72,51 @@ function(require, Form, module)
                 if (name in _this._inputs) {
                     _this._inputs[name].push(input);
                 } else {
-                    _this._inputs[name] = jQuery(input);
+                    _this.form[name] = _this._inputs[name] = jQuery(input);
+                    _this.tips[name] = form.find('span.tip[name='+name+']');
                 }
             });
-        });
+            form.find("button, input[type=submit], input[type=reset]").on("click", preventDefault);
+            inputs = inputs.filter("[test]");
+            if (inputs.length) {
+                this.V = new Validation(inputs, true);
+                this.V.on("pass", function(ok, obj)
+                {
+                    var 
+                        tip   = _this.tips[obj.name],
+                        input = _this._inputs[obj.name]
+                    ;
+                    if (ok) {
+                        input.removeClass("error");
+                        tip.removeClass("error");
+                        tip.html(tip.tip||'');
+                    } else {
+                        input.addClass("error");
+                        tip.addClass("error");
+                        tip.html(obj.msg);
+                    }
+                });
+            }
+
+        };
+        
+        Public.reset = function(data, handler) {
+            for(var k in this._inputs) {
+                if (!this._inputs.hasOwnProperty(k)) return;
+                var 
+                    input = this._inputs[k],
+                    tip   = this.tips[k]
+                ;
+                tip.removeClass("error");
+                tip.html(tip.tip||'');
+                input.removeClass("error");
+                if (handler) {
+                    handler(k, input, data, tip, this._inputs, this);
+                } else {
+                    input.val(data[k]||'');
+                }
+            }
+        };
 
         Public.get = XFunction(String, function(name)
         {
@@ -129,28 +178,82 @@ function(require, Form, module)
             });
 
         });
-        Public.setAction = XFunction(String, function(action)
-        {
-            this._form.attr("action", action);
-            this._formAction = null;
-        });
-        Public.setAction.define(Function, function(action)
-        {
-            this._formAction = action;
-        });
-        Public.getData = function()
-        {
-            
-        };
+    
+
         Public.submit = function()
         {
-            if (!this._formAction) {
-                this._form.submit();
-                return;
+            var 
+                _this  = this,
+                data   = null,
+                submit = new Deferred
+            ;
+            if (this.V) {
+                this.V.check().done(function(ok)
+                {
+                    if (!ok) {
+                        submit.rejected();
+                        return;
+                    }
+                    data = _this.getData();
+                    _this.onSubmit(data, submit);
+                    _this.fireEvent("submit", data);
+                });
+                return submit;
             }
-            return this._formAction(this.getData());
+            data = this.getData();
+            this.onSubmit(data, submit);
+            this.fireEvent("submit", data);
+            return submit;
         };
-        
+
+        Public.onSubmit = function()
+        {
+            throw new Error("需要实现Form类的onSubmit方法");
+        };
+        Public.getInputs = function()
+        {
+            return this._inputs;
+        };
+        Public.getData = function()
+        {
+            var data = {};
+            XObject.forEach(this._inputs, true, function(input, name)
+            {
+                if (input.length === 1) {
+                    if (input.attr("type") === "checkbox") {
+                        var 
+                            val   = input[0].hasAttribute("value"),
+                            check = !!input.attr("checked")
+                        ;
+                        if (val) {
+                            if (check) {
+                                data[name] = input.val();
+                            }
+                        } else {
+                            data[name] = check ? 1 : 0;
+                        }
+                    } else {
+                        data[name] = input.val();
+                    }
+                } else {
+                    var item = data[name] = [];
+                    for(var i = 0, l = input.length; i < l; i++) {
+                        item.push(input[i].value);
+                    }
+                }
+            });
+            return data;
+        };
+        Public.tip = function(name, msg, state) {
+            var tip = tis.tips[name];
+            tip.html(msg);
+            this.attr("class", 'tip ' + state);
+        };
+
+        function preventDefault(event)
+        {
+            event.preventDefault();
+        };
     });
 
 });

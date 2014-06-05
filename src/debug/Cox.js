@@ -1,5 +1,5 @@
 /**
- * #Cox.js
+ * #Cox.js.debug
  * ----------------------------------------------------------------------------
  * Cox.js 它是在标准原生 JavaScript 基础之上对 JavaScript 使用的扩展
  *  
@@ -30,13 +30,13 @@
  *
  * ----------------------------------------------------------------------------
  *
- * -   Date 2013/11/1
- * -   Version v1.2
+ * -   Date 2014/6/5
+ * -   Version v1.3
  * -   Author maolion.j@gmail.com
  * -   website http://maolion.com
  *
  */
-
+//FILTER_DEBUG = [^\r\n]+\/\*<debug>\*\/[\S\s]+?\/\*<\/debug>\*\/\s*?[\r\n]
 ;void function(){
     var 
         //常量
@@ -54,11 +54,10 @@
         undefined             = void 0,
         isNode                = typeof require === "function" && global.require !== require,
         isBrowser             = typeof window === "object"  && window === GLOBAL,
-        Cox                   = { VERSION : "1.2.0" },
+        Cox                   = { VERSION : "1.3.0" },
         newObject             = null,
         gunit                 = null,
         //主要功能模块（对外接口）
-        _UTest                = null,
         _KeyWord              = null,
         _XObject              = null,
         _XFunction            = null,
@@ -92,7 +91,7 @@
         _Use                  = null,
         _Modules              = null
     ;
-
+    /*<debug>*/
     /*
     由于Cox.js(debug版，在非debug版的源码文件中 _RELIABLE_CONSOLE_ 代
     码块的代码将会被剔除)需要依赖 环境提供的 console"控制台"输出接口 输出代
@@ -490,7 +489,8 @@
 
 
     gunit = new _UTest( "Global" );
-    
+    /*</debug>*/
+
     //创建一个新对象，并将指定对象作用于新对象原型链上   
     newObject = Object.create || (function(){
         function co_bridge(){};
@@ -499,7 +499,7 @@
             return new co_bridge;
         }
     }());
-
+    /*<debug>*/
     //为newObject功能模块添加单元测试
     gunit.append( new _UTest( "newObject", function( assert ){
         var 
@@ -521,7 +521,7 @@
 
     } ) );
     //gunit.subUnit( "newObject" ).test();
-    
+    /*</debug>*/
     //创建对象工厂类
     function ObjectFactory( factory, extend ){
         var 
@@ -549,7 +549,7 @@
 
         return factory_wrap;
     }
-
+    /*<debug>*/
     //为ObjectFactory功能模块添加单元测试
     gunit.append( new _UTest( "ObjectFactory", function( assert ){
         var 
@@ -583,6 +583,7 @@
         assert( A().constructor === A, "检测是否能正确执行-3" );
     } ) );
     //gunit.subUnit( "ObjectFactory" ).test(false);
+    /*</debug>*/
 
     /*
     实现 用于标记某功能模块的标识符为Cox的关键字（对外提供的核心接口标识符）
@@ -697,7 +698,7 @@
 
             return true;
         };
-
+        /*<debug>*/
         gunit.append( new _UTest( "KeyWord", function( assert ){
             var 
                 temp  = {
@@ -751,16 +752,18 @@
             groups   = temp.groups;
             keywords = temp.keywords;
         } ) );
-    
+        //gunit.subUnit( "KeyWord" ).test();
+        /*</debug>*/
     }();
-    //gunit.subUnit( "KeyWord" ).test();
 
     /*
      * 提供了一套常用的基础工具组件
      */
     void function __IMPLEMENT_UTIL__(){
         var 
+            /*<debug>*/
             util_unit             = new _UTest( "Util" ),
+            /*</debug>*/
             CANNOT_ENUM_PROPERTYS = !(GLOBAL.ActiveXObject && GLOBAL.document && ~~GLOBAL.document.documentMode <= 8) && [] || [
                 "constructor",
                 "toString",
@@ -805,7 +808,7 @@
         _PlainObject.__instancelike__ = function( obj ){
             return obj && obj.constructor === Object;
         };
-
+        /*<debug>*/
         util_unit.append(
             new _UTest( "PlainObject", function( assert ){
                 var n = 0;
@@ -816,7 +819,7 @@
                 assert( n === 2, "检测 PlainObject.__instancelike__ 是否能被正确执行" );
             } )
         );
-
+        /*</debug>*/
         _Type = _KeyWord( "Type", _KeyWord.DATATYPE, function Type(){
             return Function.apply( null, arguments );
         } );
@@ -827,7 +830,7 @@
                 typeof type.__instancelike__ === "function" 
             );
         }
-
+        /*<debug>*/
         util_unit.append(
             new _UTest( "Type", function( assert ){
                 assert( _Type() instanceof Function, "测试是否能正确执行-1" );
@@ -843,7 +846,7 @@
                 assert( _Type.__instancelike__( null ) === false, "_Type.__instancelike__( null ) === false" );
             } )
         );
-
+        /*</debug>*/
         /**
          * Null 空数据类型
          */
@@ -859,7 +862,7 @@
         _Null.__instancelike__ = function( obj ){
             return obj === null || obj === undefined;
         };
-
+        /*<debug>*/
         util_unit.append(
             new _UTest( "NullObject", function( assert ){
                 var n = 0;
@@ -871,6 +874,7 @@
                 assert( n === 3, "检测 Null.__instancelike__ 是否能被正确执行" );
             } )
         );
+        /*</debug>*/
         /**
          * XObject 提供一些用于操作对象数据的一些静态方法集，通过 XObject构
          * 造出的对象与普通对象无任何差别
@@ -885,7 +889,7 @@
          * XObject.create 创建一个新对象，并将指定对象作用于新对象原型链上
          * @example
          *  var obj = null;
-         *  obj = _XObject.create( { 
+         *  obj = XObject.create( { 
          *      p1 : 1
          *      m1 : function(){ return this.p1; }
          *  } );
@@ -922,6 +926,7 @@
          *      //...
          *  } );
          */
+
         _XObject.forEach = [
             function (obj, onlyself, callback, thisp)
             {
@@ -1014,7 +1019,7 @@
          * @param { Object } obj 
          * @return { Array }
          * @example
-         *  var objkeys = _XObject.keys( { p1 : 1, p2 : 2 } );
+         *  var objkeys = XObject.keys( { p1 : 1, p2 : 2 } );
          */
         _XObject.keys = function kyes( obj ){
             var keys = [];
@@ -1043,7 +1048,7 @@
         */
 
         //_XObject.prototype
-
+        /*<debug>*/
         //为 XObject及其提供的方法 添加单元测试
         util_unit.append( 
             new _UTest( "XObject", function( assert ){
@@ -1182,7 +1187,7 @@
             } )
         );
         //util_unit.sub( "XObject" ).test();
-
+        /*</debug>*/
 
         /**
          * XString 提供一些用于操作字符串数据的一些静态方法集，通过 XString构
@@ -1324,7 +1329,7 @@
         _XString.__instancelike__ = function( obj ){
             return obj instanceof String || typeof obj === "string";
         };
-
+        /*<debug>*/
         //为 XString 及其提供的方法 添加单元测试
         util_unit.append(
             new _UTest( "XString", function( assert ){
@@ -1401,6 +1406,7 @@
         );
 
         //util_unit.subUnit( "XString" ).test();
+        /*</debug>*/
 
         _XList = _KeyWord( "XList", _KeyWord.DATATYPE , function XList(){
             return Array.apply( null, arguments );
@@ -1544,7 +1550,7 @@
          * @param { Array } list
          * @param { Function } callback
          * 回调函数的参数列表依次为：[ 项值，项索引，有序列表 ] .
-         * @param { Object } thisp 回调函数 内部 this 指向(默认为环境全局对
+         * @param { Object } thisp 回调函数 内部 this 指向(c
          * 象) 
          * @return { Array }
          * @example
@@ -1719,7 +1725,7 @@
         _XList.__instancelike__ = function( obj ){
             return obj instanceof Array;
         };
-
+        /*<debug>*/
         //为 XList 及其提供的方法 添加单元测试
         util_unit.append(
             new _UTest( "XList", function( assert ){
@@ -1918,6 +1924,8 @@
         );
 
         //util_unit.subUnit( "XList" ).test();
+        /*</debug>*/
+
 
         /**
          * is 用于判断指定对象与某一类的关系
@@ -1953,7 +1961,7 @@
             }
 
         };
-
+        /*<debug>*/
         util_unit.append(
             new _UTest( "is", function( assert ){
                 assert( _is( null ) === false, "_is( null ) === false" );
@@ -1986,7 +1994,7 @@
 
         //util_unit.test(); 
         gunit.append( util_unit );
-
+        /*</debug>*/
     }();
 
 
@@ -2001,7 +2009,9 @@
     void function __IMPLEMENT_XFUNCTION__(){
         
         var 
+            /*<debug>*/
             XFunction_unit    = new _UTest( "XFunction" ),
+            /*</debug>*/
             ParamTypeModifier = null,
             METHODS           = null
         ;
@@ -2044,7 +2054,7 @@
                 || param === undefined 
                 || _is( this.type, param );
         };
-
+        /*<debug>*/
         XFunction_unit.append(
             new _UTest( "Nullable", function( assert ){
                 assert( _is( _KeyWord, _Nullable, _KeyWord.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
@@ -2061,7 +2071,8 @@
                 console.log( _Nullable( String ).toString() );
             } )
         );
-    
+        /*</debug>*/
+
         /**
          * Optional 用于标记函数参数列表中某一参数为可选参数
          * @param { Type } type 参数类型
@@ -2110,7 +2121,7 @@
                 " )" );
             }, ParamTypeModifier )
         );
-        
+        /*<debug>*/
         XFunction_unit.append(
             new _UTest( "Optional", function( assert ){
                 assert( _is( _KeyWord, _Optional, _Optional.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
@@ -2124,7 +2135,7 @@
                 assert(  _Optional( Object, null ).value === null, "检测是否能正确执行-8" );
             } )
         );
-
+        /*</debug>*/
         /**
          * Params 可变参数集
          * @param { Type } type 类型
@@ -2157,7 +2168,7 @@
             }
             return true;
         };
-
+        /*<debug>*/
         XFunction_unit.append(
             new _UTest( "Params", function( assert ){
                 assert( _is( _KeyWord, _Params, _KeyWord.PARAM_TYPE_MODIFIER ), "检测是否为关键字" );
@@ -2171,7 +2182,7 @@
                 console.log( _Params( String ).toString() );
             } )
         );
-
+        /*</debug>*/
         /**
          * ParamTypeTable 参数类型表
          * @param { Type } types [ Type, Type, ... ]
@@ -2339,7 +2350,7 @@
         _ParamTypeTable.prototype.toString = function toString(){
             return this.__COX_SIGN__;
         };
-
+        /*<debug>*/
         XFunction_unit.append(
             new _UTest( "ParamTypeTable", function( assert ){
                 var 
@@ -2392,6 +2403,7 @@
         );
         
         //XFunction_unit.subUnit( "ParamTypeTable" ).test();
+        /*</debug>*/
 
         METHODS    = {
             /**
@@ -2460,7 +2472,27 @@
                 func.__COX_SIGN__                    = this.__COX_SIGN__;
                 return func;
             },
-
+            /**
+             * func 根据传递的参数获得相应的处理函数
+             * @param {Array}  args 
+             * @return {Function}
+             */
+            func : function(args)
+            {
+                var 
+                    list      = this.__COX_XFUNCTION_OVERLOAD_LIST__,
+                    handler   = null
+                ;
+                //从重载列表中找到能处理传递参数的处理程序
+                for( var i = 0, l = list.length; i < l; i++  ){
+                    var types = list[i];
+                    if( types.parse( args ) ){
+                        handler = types.__COX_BUILD_HANDLER__;
+                        break;
+                    }
+                }
+                return handler;
+            },
             toString : function toString(){
                 return this.__COX_SIGN__;
             }
@@ -2566,6 +2598,11 @@
 
         };
 
+        _XFunction.__instancelike__ = function(obj) {
+            return obj instanceof Function && obj.__COX_XFUNCTION_OVERLOAD_LIST__ instanceof Array;
+        }
+
+        /*<debug>*/
         XFunction_unit.append(
             new _UTest( "XFunction", function( assert ){
                 var 
@@ -2655,7 +2692,7 @@
         gunit.append( XFunction_unit );
         //XFunction_unit.subUnit( "XFunction" ).test();
         //XFunction_unit.test();
-
+        /*</debug>*/
     }();
     
     /*
@@ -2668,7 +2705,9 @@
      */
     void function __IMPLEMENT_OOP__(){
         var 
+            /*<debug>*/
             oop_unit  = new _UTest( "Oop" ),
+            /*</debug>*/
             BaseClass = null,
             ClassMode = null
         ;
@@ -2696,7 +2735,7 @@
                 this.interfaces = interfaces;
             } )
         );
-
+        /*<debug>*/
         oop_unit.append(
             new _UTest( "Modiffier", function( assert ){
                 assert( _is( _KeyWord, _Extends, _KeyWord.SUBSIDIARY ), "检测Extends是否为关键字" );
@@ -2706,6 +2745,7 @@
         
             } )
         );
+        /*</debug>*/
 
         /**
          * Interface 接口定制工具
@@ -2909,6 +2949,7 @@
         _Interface.prototype.toString = function toString(){
             return this.__COX_SIGN__;
         };
+        /*<debug>*/
         //InterfaceUnit
         oop_unit.append(
             new _UTest( "Interface", function( assert ){
@@ -2997,6 +3038,7 @@
         );
         
         //oop_unit.subUnit( "Interface" ).test();
+        /*</debug>*/
 
         /**
          * ClassMode 类模式
@@ -3019,7 +3061,7 @@
 
         _Abstract.newClass = function newClass(){   
             return function(){
-                throw new SynataxError(
+                throw new SyntaxError(
                     "抽象类不允许被实例化！"
                 );
             };
@@ -3352,7 +3394,11 @@
                     var next = false;
                     if (key === "CONSTRUCTOR" && sinfo) {
                         prop = sinfo.CONSTRUCTOR;
-                        next = prop === info.CONSTRUCTOR.__ORIGIN__ || prop === info.CONSTRUCTOR;
+                        if (_is(_XFunction, prop) && _is(_XFunction, info.CONSTRUCTOR)) {
+                            next = prop.func(args) === info.CONSTRUCTOR.func(args);
+                        } else {
+                            next = prop === info.CONSTRUCTOR;
+                        }
                     } else {
                         prop = _super.prototype[key];
                         next = prop instanceof Function && this[key] === prop;
@@ -3515,7 +3561,7 @@
             }
         );
 
-
+        /*<debug>*/
         oop_unit.append(
             new _UTest( "Class.Entity", function( assert ){
                 var 
@@ -3581,7 +3627,7 @@
                 assert( !( "m1" in C1 ), "检测是否能正确执行-4" );
                 assert( C1.P1 === 0, "检测是否能正确执行-5" );
                 assert( C1.prototype.constructor === C1, "检测是否能正确执行-6" );
-                console.log( C1 );
+                console.log( C1 );;
             } )
         );
         //oop_unit.subUnit( "Class.Abstract" ).test();
@@ -3655,7 +3701,7 @@
                     C2 = _Class( "C2", _Entity, _Extends( C1 ), null, function C2( Static, Public ){
                         
                         Public.constructor.define( function(){
-                            this.Super( "constructor" );
+                            this.Super("constructor");
                             t += "->C2";
                         } );
 
@@ -3816,12 +3862,15 @@
         //oop_unit.subUnit( "Class.multiple" ).test();
         gunit.append( oop_unit );
         //oop_unit.test();
+        /*</debug>*/
     }();
 
     
     void function __IMPLEMENT_TOOLS__(){
         var 
+            /*<debug>*/
             tools_unit         = new _UTest( "Tools" ),
+            /*</debug>*/
             DSTATE_UNFULFILLED = 0,
             DSTATE_FULFILLED   = 1,
             DSTATE_REJECTED    = -1,
@@ -3907,7 +3956,7 @@
             };
 
         } );
-        
+        /*<debug>*/
         tools_unit.append(
             new _UTest( "EventListener", function( assert ){
                 var 
@@ -3939,7 +3988,8 @@
                 assert( t === 0, "检测是否能正确执行-4" );
             } )
         );
-        
+        /*</debug>*/
+
         _Class( "Event", _Entity, null, _Implements( IEvent ), function( Static, Public ){
             _Event = this;
             Public.constructor = _XFunction( 
@@ -4072,7 +4122,8 @@
             Public.once = Public.addOnceEventListener;
             Public.un   = Public.removeEventListener;
         } );
-        
+
+        /*<debug>*/
         tools_unit.append(
             new _UTest( "EventSource", function( assert ){
                 var 
@@ -4157,8 +4208,9 @@
                 assert( t === 4, "检测是否能正确执行-12" );
             } )
         );
-
+        
         //tools_unit.subUnit( "EventSource" ).test();
+        /*</debug>*/
 
         /**
          * Deferred 延迟操作管理类
@@ -4217,6 +4269,7 @@
                             error && error.call( this, this._value, this._error );
                         break;
                     }
+                    return this;
                 } 
             );
 
@@ -4256,6 +4309,7 @@
                         stop = true;
                         event.stopPropagation();
                     };
+                    return this;
                 }
             );
 
@@ -4346,6 +4400,7 @@
 
         } );
         
+        /*<debug>*/
         tools_unit.append(
             new _UTest( "Deferred", function( assert ){
                 var 
@@ -4475,6 +4530,7 @@
             } )
         );
         //tools_unit.subUnit( "Deferred" ).test();
+        /*</debug>*/
 
         /**
          * Class: DeferredList 延迟操作组管理类
@@ -4562,6 +4618,7 @@
                         deferred.resolved( value );
                     }
                 }
+
             };
 
             /**
@@ -4607,6 +4664,7 @@
 
         } );
         
+        /*<debug>*/
         tools_unit.append(
             new _UTest( "DeferredList", function( assert ){
                 var 
@@ -4745,6 +4803,7 @@
 
         gunit.append( tools_unit );
         //tools_unit.test();
+        /*</debug>*/
     }();
 
     /*
@@ -4763,10 +4822,12 @@
             RE_URL_ROOT        = /^(\w+:\/{2,3}[^\/]+)/,
             RE_URL_PARAMS      = /(?:\?([^#]*))?(#.*)?$/,
             RE_DIR_NAME        = /^(.*)\/.*$/,
-            RE_MODULE_NAME     = /^[\w.]+$/,
+            RE_MODULE_URL      = /^~\/(?:[a-zA-Z0-9_\-\.]+?\/?)+$/,
+            RE_MODULE_NAME     = /^[a-zA-Z_][a-zA-Z0-9_\.]*$/,
             RE_PATH_SEP        = /\\{1,}/g,
             RE_ROOT_PATH_SEP   = /\s*;\s*/,
             RE_KV_SEP          = /\s*=\s*/,
+            DOC                = null,
             REL                = null,
             LOCA_URL           = null,
             LOCA_PROTOCOL      = null,
@@ -4781,7 +4842,9 @@
                 debug       : false,
                 roots       : {}
             },
+            /*<debug>*/
             amd_unit = null,
+            /*</debug>*/
             UID  = function(){
                 var uid = new Date().getTime();
                 return function(){
@@ -4792,13 +4855,14 @@
 
         //依赖于环境的常量值
         if( isBrowser ){
-            REL             = GLOBAL.document.documentElement.getElementsByTagName("HEAD")[0];
+            DOC             = GLOBAL.document,
+            REL             = DOC.head || DOC.getElementsByTagName("HEAD")[0] || DOC.documentElement;
+            REL.BASE_EL     = REL.getElementsByTagName('base')[0];
             LOCA_URL        = GLOBAL.location.href;
             LOCA_PROTOCOL   = LOCA_URL.match( RE_PROTOCOL_SIGN )[0];
             LOCA_ROOT       = LOCA_URL.match( RE_URL_ROOT )[1];
             MODULE_ROOT     = LOCA_URL.match( RE_DIR_NAME )[1];
             MODULE_FILE_EXT = ".js";
-
         }else if( isNode ){
             LOCA_PROTOCOL   = "";
             LOCA_ROOT       = dirname( require.main.filename );
@@ -4907,7 +4971,7 @@
                 cache    = {}
             ;
 
-            return function require( uri ){
+            return function require( uri, exports, getDefine ){
                 var 
                     module = cache[ uri ],
                     define = null
@@ -4940,27 +5004,47 @@
                     );
                 }
 
-                if( !module.exports ){
-                    module.exports = {};
+                if( exports || !module.exports ){
+                    module.exports = exports || {};
                 }
 
                 if( typeof module.define !== "function" ){
                     return module.exports;
                 }
-
                 define = module.define;
-                delete module.define;
-                module.__define = define;
-                //调用模块的定义体
-                define( 
-                    _require( module ),
-                    module.exports, 
-                    module, 
-                    module.url,
-                    dirname( module.url )
-                );
-
-                return module.exports;
+                var 
+                    __dir__     = dirname(module.url),
+                    __file__    = module.url,
+                    __require__ = _require(module),
+                    exports     = module.exports
+                ;
+                if (!getDefine) {
+                    delete module.define;
+                    module.__define = define;
+                    //调用模块的定义体
+                    define.call( 
+                        exports,
+                        __require__,
+                        exports, 
+                        module, 
+                        __file__,
+                        __dir__
+                    );
+                    return module.exports;
+                } else {
+                    return function() {
+                        define.call( 
+                            exports,
+                            __require__,
+                            exports,
+                            module, 
+                            __file__,
+                            __dir__
+                        );
+                        
+                        return module.exports;
+                    };
+                }
             };
         }
 
@@ -5007,19 +5091,23 @@
                         loader.setAttribute( "defer"  , "true" );
                         loader.setAttribute( "src"    , url );
 
-                        REL.insertBefore( loader, null );
+                        REL.BASE_EL ? 
+                            REL.insertBefore(loader, baseElement) :
+                            REL.appendChild(loader)
+                        ;
+                        //REL.insertBefore( loader, null );
 
                         function loaded(){ 
                             if( loader.addEventListener 
                              || loader.readyState === "loaded" 
                              || loader.readyState === "complete" 
                             ){
+                                !GLOBAL.DEBUG && REL.removeChild(loader);
                                 delete loading_modules[ module.id ];
                                 loaded_modules[ module.id ] = module;
                                 if( !module.loaded.isDone() ){
-                                    //console.log( module );
                                     module.loaded.resolved();
-                                    module.resolved();
+                                    !module.isDone() && module.resolved();
                                 }
 
                                 if( loader.removeEventListener ){
@@ -5028,10 +5116,12 @@
                                 }else{
                                     loader.detachEvent( "onreadystatechange", loaded );
                                 }
+                                GLOBAL.DEBUG && console.log(module.url, "loaded");
                             }
                         }
 
                         function loadfail(){
+                            !GLOBAL.DEBUG && REL.removeChild(loader);
                             delete loading_modules[ module.id ];
 
                             if( loader.removeEventListener ){
@@ -5041,8 +5131,12 @@
                                 loader.detachEvent( "onreadystatechange", loaded );
                                 loader.detachEvent( "error", loadfail );
                             }
-
-                            module.loaded.rejected();
+                            module.loaded.rejected({
+                                id      : module.id,
+                                url     : module.url,
+                                module  : module,
+                                message : "无法添加该模块"
+                            });
                         }                
                     }
 
@@ -5075,7 +5169,12 @@
                         //console.log( module.id );
                         loaded_modules[ module.id ] = module;
                     }catch( e ){
-                        module.loaded.rejected();
+                        module.loaded.rejected({
+                            id      : module.id,
+                            url     : module.url,
+                            module  : module,
+                            message : "无法添加该模块"
+                        });
                         module.rejected();
                         throw e;
                     }finally{
@@ -5117,30 +5216,37 @@
                         pmodules = []
                     ;
                     //将每一个依赖模块的依赖模块关联到指定模块上
-                    dmodules && _XObject.forEach( dmodules, true, function( dm, id ){
-                        dm             = ModuleCenter.getModule( dm.id ) || dm;
-                        dmodules[ id ] = dm;
-                        id             = dm.id;
-                        if( id !== module.id
-                         && !( pending.list[ id ] instanceof Module )
-                        ){
-                            pending.list[ id ] = dm;
-                            pending.length++;
-                            pmodules.push( dm );
-                        }
-                    } );
-
-                    pmodules.length && _XList.forEach( pmodules, function( pm ){
-                        pm.loaded.then(
-                            function(){
-                                pending.length--;
-                                link( module, pm, pending );
-                            },
-                            function( value ){
-                                module.rejected( value );
+                    if (dmodules) {
+                        for (var id in dmodules) {
+                            if (!dmodules.hasOwnProperty(id)) continue;
+                            var 
+                                dm = dmodules[id]
+                                dm = dmodules[id] = ModuleCenter.getModule(dm.id) || dm,
+                                id = dm.id
+                            ;
+                            if( id !== module.id
+                             && !( pending.list[ id ] instanceof Module )
+                            ){
+                                pending.list[ id ] = dm;
+                                pending.length++;
+                                pmodules.push( dm );
                             }
-                        );
-                    } );
+                        }
+                    }
+                    if (pmodules.length){
+                        for (var i = pmodules.length; --i>=0; ) {
+                            var pm = pmodules[i];
+                            pm.loaded.then(
+                                function(){
+                                    pending.length--;
+                                    link( module, pm, pending );
+                                },
+                                function( value ){
+                                    !module.isDone() && module.rejected( value );
+                                }
+                            );
+                        }
+                    }
 
                     //当所有依赖模块被准备完毕之时
                     if( pending.length === 0 && pending.wait === null ){
@@ -5164,7 +5270,7 @@
                                 }
                             );
                         }else{
-                            module.resolved();
+                            !module.isDone() && module.resolved();
                         }
                     }
                 }
@@ -5205,9 +5311,9 @@
                                         eloaded.target = dmodule;
                                         ModuleCenter.fireEvent( "loaded", [ eloaded ] );
                                     },
-                                    function(){
+                                    function(error){
                                         eerror.target = dmodule;
-                                        ModuleCenter.fireEvent( "eerror", [ eerror ] );
+                                        ModuleCenter.fireEvent( "error", [ eerror, error ] );
                                     }
                                 );
                             }
@@ -5217,6 +5323,22 @@
                     link( module, module, pending );
                 };
             }();
+            Public.loadedModule = function(module) {
+                loaded_modules[module.id] = module;
+            }
+
+
+            Public.loadingModule = function(module)
+            {
+                var id = module.id;
+                loading_modules[id] = module;
+                module.loaded.done(function()
+                {
+                    delete loading_modules[id];
+                    loaded_modules[id] = module;
+                });
+            };
+
             /**
              * @method exists 检测某一模块是否被包含在模块管理中心里
              * @param { Module } module
@@ -5346,24 +5468,17 @@
             Module = this;
             var moduleUriFormats = [
                 {
-                    //URL
-                    pattern : /^\w+:\/{2,3}[\S]+$/,
-                    resolve : function( url ){
-                        return url;
+                    //ABSOLUTE PATH
+                    pattern : /^[A-Za-z]\:.+$/,
+                    resolve : function( path ){
+                        return path;
                     }
                 },
                 {
-                    //root
-                    pattern : /^~\/.+$/,
-                    resolve : function( uri ){
-                        var root = "~/";
-                        _XList.forEach( uri.slice( 2 ).split( "/" ), function( item, index ){
-                            if( ( root + item ) in config.roots ){
-                                root += item;
-                                return false;
-                            }
-                        } );
-                        return merge( config.roots[ root ], uri.slice( root.length ) );
+                    //global
+                    pattern : /^[\S]+$/,
+                    resolve : function( uri, root ){
+                        return "";
                     }
                 },
                 {
@@ -5377,19 +5492,27 @@
                     }
                 },
                 {
-                    //global
-                    pattern : /^[\S]+$/,
-                    resolve : function( uri, root ){
-                        return "";
+                    //root
+                    pattern : /^~\/.+$/,
+                    resolve : function( uri ){
+                        var 
+                            root  = "~/",
+                            next  = uri.slice(2),
+                            other = next.slice(0, next.indexOf("/"))
+                        ;
+                        if ((root + other) in config.roots ) {
+                            root += other;
+                        }
+                        return merge( config.roots[ root ], uri.slice( root.length ) );
                     }
                 },
                 {
-                    //ABSOLUTE PATH
-                    pattern : /^[A-Za-z]\:.+$/,
-                    resolve : function( path ){
-                        return path;
+                    //URL
+                    pattern : /^\w+:\/{2,3}[\S]+$/,
+                    resolve : function( url ){
+                        return url;
                     }
-                }
+                },
             ];
 
             function merge( root, uri ){
@@ -5417,13 +5540,15 @@
                     info = {}
                 ;
                 root = root || MODULE_ROOT;
-
-                uri && _XList.forEach( moduleUriFormats, function( format, index ){
-                    if( format.pattern.test( uri ) === true ){
-                        url = format.resolve( uri, root );
-                        return false;
+                if (uri) {
+                    for(var i = moduleUriFormats.length; --i >=0;) {
+                        var format = moduleUriFormats[i];
+                        if( format.pattern.test( uri ) === true ){
+                            url = format.resolve( uri, root );
+                            break;
+                        }    
                     }
-                }, this );
+                }
                 info.id  = url || uri;
                 info.url = url;
 
@@ -5490,16 +5615,15 @@
 
             this._uris     = uris;
             this._root     = root = root || MODULE_ROOT;
-            _XList.forEach( uris, function( uri, key ){
-                var minfo, id;
-
-                if( modules[ uri ] instanceof Module ){
-                    return;
-                }
-                minfo          = Module.resolve( uri, root );
-                id             = minfo.id;
-                modules[ uri ] = ModuleCenter.getModule( id ) || new Module( uri, root );
-            } );
+            for (var i = uris.length; --i >= 0;) {
+                var uri   = uris[i];
+                if (modules[uri] instanceof Module) 
+                    continue;
+                
+                modules[uri] = ModuleCenter.getModule(Module.resolve(uri, root).id) || 
+                               new Module(uri, root)
+                ;
+            }
             this.modules = modules;
         };
 
@@ -5555,21 +5679,24 @@
                     newmodule   = null,
                     modulename  = _XString.trim( modulename ),
                     cmodulename = new RegExp( "\/" + modulename + "(?:\.js|\.JS)?$" )
+                    isModuleURL = false
                 ;
 
-                if( !( _is( String, modulename ) ? modulename : "" ).length 
-                 || !RE_MODULE_NAME.test( modulename )
+                if( !modulename.length 
+                 || (!RE_MODULE_NAME.test(modulename) && !(isModuleURL = RE_MODULE_URL.test(modulename)))
                 ){
-                    throw new Error( "无效的模块标识符" );
+                    throw new Error("无效的模块标识符");
                 }
 
                 if( !define ){
                     throw new Error( "需要一个Function类型实例来完成模块的定义" );
                 }
-                newmodule = ModuleCenter.findInLoading( modulename ) 
+                newmodule = isModuleURL && ModuleCenter.getModule(Module.resolve(modulename).id)
+                         || ModuleCenter.findInLoading( modulename ) 
                          || ModuleCenter.findInLoading( function( module, id ){
                             return cmodulename.test( id );
-                         } );
+                         } )
+                ;
                 if( !newmodule ){
                     //对象node.js平台
                     if( isNode ){
@@ -5598,11 +5725,11 @@
                                 newmodule.exports = nmodule.exports;
                             }
 
-                            return false;
+                            return;
                         }
                     }
-
-                    newmodule = new Module( modulename, "" );
+                    newmodule = new Module( isModuleURL ? Module.resolve(modulename).url : modulename, "" );
+                    ModuleCenter.loadedModule(newmodule);
                 }
 
                 if( depend ){
@@ -5611,10 +5738,18 @@
 
                 newmodule.define = define;
                 newmodule.depend = depend;
-                newmodule.loaded.resolved();
+                !newmodule.loaded.isDone() && newmodule.loaded.resolved();
                 ModuleCenter.pending( newmodule );
             }
         );
+        
+        _Define.promise = _XFunction(_Params(String), function(uris)
+        {
+            for (var i = uris.length;--i>=0;) {
+                ModuleCenter.loadingModule(new Module(Module.resolve(uris[i]).id));
+            }
+        });
+
         /**
          * Use 使用外部的模块
          * @param { Modules } modules 外部模块列表
@@ -5667,7 +5802,7 @@
                 }
             });
         }
-
+        /*<debug>*/
         amd_unit = new _UTest(
             "AMD", function( assert, deferred, next ){
                 var t = 0;
@@ -5683,6 +5818,7 @@
         );
         gunit.append( amd_unit );
         //amd_unit.test();
+        /*</debug>*/
     }();
 
     
@@ -5704,10 +5840,11 @@
     GLOBAL.Single         = Cox.Single         = _Single;
     GLOBAL.Finaly         = Cox.Finaly         = _Finaly;
     GLOBAL.XFunction      = Cox.XFunction      = _XFunction;
-    GLOBAL.UTest          = Cox.UTest          = _UTest;
     GLOBAL.Deferred       = Cox.Deferred       = _Deferred;
     GLOBAL.DeferredList   = Cox.DeferredList   = _DeferredList;
-    
+    /*<debug>*/
+    GLOBAL.UTest          = Cox.UTest          = _UTest;
+    /*</debug>*/
     GLOBAL.forEach = Cox.forEach = _XFunction(
         Array, Function, _Optional( Object ), _XList.forEach
     );
@@ -5749,7 +5886,7 @@
     GLOBAL.Define = Cox.Define = _XFunction(
         String, _Optional( _Modules ), Function, _Define
     );
-
+    GLOBAL.Define.promise = _Define.promise;
     GLOBAL.Modules = Cox.Modules = _XFunction(
         Params( String ), _Modules
     );
@@ -5776,8 +5913,10 @@
     Cox.ownDocument   = GLOBAL.document;
     Cox.ownWindow     = GLOBAL;
     _XObject.mix( GLOBAL.Modules, _Modules, true ); 
-    
     typeof exports !== "undefined" && ( module.exports = Cox );
-
-    //gunit.test( true );
+    
+    GLOBAL.DEBUG = true;
+    /*<debug>*/
+    gunit.test( true );
+    /*</debug>*/
 }();

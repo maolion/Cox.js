@@ -34,7 +34,7 @@ function(require, Validation, module)
             getVerifaicationTool = null
         ;
 
-        Public.constructor = XFunction(jQuery, function(inputs)
+        Public.constructor = function(inputs, checkInBlur)
         {
             var 
                 _this   = this,
@@ -52,17 +52,38 @@ function(require, Validation, module)
             inputs.each(function(index, input)
             {
                 var 
-                    type = XString.trim(input.getAttribute("type")||""),
-                    test = XString.trim(input.getAttribute("test")||""),
-                    name = XString.trim(input.getAttribute("name")||"")
+                    type  = XString.trim(input.getAttribute("type")||""),
+                    test  = XString.trim(input.getAttribute("test")||""),
+                    name  = XString.trim(input.getAttribute("name")||""),
+                    label = input.getAttribute("label")||""
                 ;
                 if (RE_FILTER_TYPE.test(type) || !test || !name) return;
                 _inputs[name] = {
                     input    : input,
+                    label    : label ? "(" + label + ")" : label,
                     verify   : getValidationTool(test)
                 };
             });
-        });
+            if (checkInBlur) {
+                inputs.on("blur", function()
+                {
+                    _this.check(this.getAttribute("name"));
+                });
+                this.on("pass", function(ok, obj)
+                {
+                    jQuery(obj.input)[ok ? "removeClass" : "addClass"]("error");
+                });
+            }
+        };
+        Public.append = function(input, handler)
+        {
+            return this._inputs[input.getAttribute("name")] = {
+                input  : input,
+                verify : {
+                    test : handler
+                }
+            };
+        };
 
         Public.check = XFunction(function()
         {
@@ -77,11 +98,14 @@ function(require, Validation, module)
                     input = obj.input,
                     r     = null
                 ;
+                if (input.disabled) {
+                    return;
+                }
                 _this.fireEvent("next", [input]);
                 if (obj.verify.test instanceof RegExp) {
                     r = obj.verify.test.test(input.value);
                 } else {
-                    r = obj.verify.test(input, input.value, this);
+                    r = obj.verify.test(input, input.value, _this);
                 }
 
                 obj = {
@@ -89,7 +113,7 @@ function(require, Validation, module)
                     name  : name,
                     input : input,
                     value : input.value,
-                    msg   : obj.verify.errmsg
+                    msg   : obj.label + obj.verify.errmsg
                 };
 
                 if (r instanceof Deferred) {
@@ -114,13 +138,16 @@ function(require, Validation, module)
                     check.resolved(obj);
                 }
             });
-
-
-            checks = new DeferredList(checks);
-            checks.done(function(ok, value)
-            {
-                _this.fireEvent("done", [ok, value]);
-            });
+            if (checks.length === 0) {
+                checks = new Deferred;
+                checks.resolved();
+            } else {
+                checks = new DeferredList(checks);
+                checks.done(function(ok, value)
+                {
+                    _this.fireEvent("done", [ok, value]);
+                });
+            }
             return checks;
         });
 
@@ -145,7 +172,7 @@ function(require, Validation, module)
                 name  : name,
                 input : input,
                 value : input.value,
-                msg   : obj.verify.errmsg
+                msg   : obj.label + obj.verify.errmsg
             };
             if (v instanceof Deferred) {
                 v.done(function(ok , value)
@@ -193,8 +220,10 @@ function(require, Validation, module)
                 Enum           = null,
                 and            = null,
                 url            = null,
-                or             = null
+                or             = null,
+                check          = null
             ;
+
             function Tool(name, errmsg, test)
             {
                 this.tool   = name || "";
@@ -262,8 +291,10 @@ function(require, Validation, module)
                 var 
                     swap = min
                 ;
+                
                 min = Math.min(max, min);
                 max = Math.max(max, swap);
+
                 return new Tool("int", "输入数值非整数值或不大限定大小范围内", function(input, value)
                 {
                     if(value === "") return true;
@@ -345,18 +376,19 @@ function(require, Validation, module)
 
             and = XFunction(Params(Object), function(tools)
             {
-                return new Tool("and", "", function(input, value)
+                for (var i = 0, l = tools.length; i < l; i++){
+                    tools[i] = tools[i] instanceof Function ? tools[i]() : tools[i];
+                }
+                return new Tool("and", "", function(input, value, obj)
                 {
-                    var r = null;
-                    XList.forEach(tools, function(tool)
-                    {
-                        if ( tool.test instanceof RegExp ? !tool.test.test(value) : !tool.test(input, value)) {
-                            r = tool.errmsg;
+                    for (var i = 0, l = tools.length; i < l; i++){
+                        var tool = tools[i];
+                        if ( tool.test instanceof RegExp ? !tool.test.test(value) : !tool.test(input, value, obj)) {
+                            this.errmsg = tool.errmsg;
                             return false;
                         }
-                    });
-                    if (r) this.errmsg = r;
-                    return !r;
+                    }
+                    return true;
                 });
             });
             or = XFunction(Params(Object), function(tools)
@@ -367,16 +399,28 @@ function(require, Validation, module)
                     {
                         return a.errmsg + " 或 " + b.errmsg
                     }),
-                    function(input, value)
+                    function(input, value, obj)
                     {
                         return XList.some(tools, function(tool)
                         {
-                            return tool.test(input, value);
+                            return tool.test(input, value, obj);
                         });
                     }
                 );
             });
-
+            check = function(name, test, tip)
+            {
+                test = test instanceof Function ? test() : test;
+                return new Tool(
+                    "check", 
+                    tip || "不通过",
+                    function(input, value, obj) {
+                        input = obj._inputs[name].input;
+                        value = input.value;
+                        return (!test || test.test(input, value, obj)) && obj.check(name);
+                    }
+                );
+            };
             return function(expression) 
             {
                 var tool = eval('('+ expression +')');

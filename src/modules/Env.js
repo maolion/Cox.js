@@ -155,13 +155,14 @@ Define( "Env", function( _require, Env, module ){
         return engine;
     }();
 
-    Env.jsEngine.parseJSON = function( json ){
-        if( !R_JSON_SIGN.test( json ) ){
+    Env.jsEngine.parseJSON = GLOBAL.JSON ? GLOBAL.JSON : function( json ){
+        /*if( !R_JSON_SIGN.test( json ) ){
             throw new SyntaxError(
                 "不被接受的 json 数据格式."
             );
-        }
+        }*/
         return new Function( "return " + json + ";" )();
+    
     };
 
     Env.renderEngine = function(){

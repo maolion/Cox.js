@@ -1,0 +1,55 @@
+<HTML><HEAD><TITLE>HTML转成WORD</TITLE></HEAD><body>
+<OBJECT id="FileDialog" style="LEFT: 0px; TOP: 0px"
+codeBase="http://activex.microsoft.com/controls/vb5/comdlg32.cab"
+classid="clsid:f9043c85-f6f2-101a-a3c9-08002b2f49fb" VIEWASTEXT></OBJECT>
+<SCRIPT language="JavaScript">
+<!--
+function exptWord(obj){
+
+/************{ Mended By Tean Z.Gun }************
+
+Function:
+      Export HTML as Word file
+      Ver_2005.09.30
+Parameters:
+      obj: assign the object to export
+e.g. exptWord(testObject)
+
+*************{ Mended By Tean Z.Gun }************/
+
+        var WordApp;
+        var Doc;
+        try{
+                WordApp = new ActiveXObject("Word.Application");
+                WordApp.Application.Visible=true; // show WORD?
+
+                obj.focus();
+                obj.document.execCommand("SelectAll");
+                obj.document.execCommand("Copy");
+                obj.focus();
+
+                Doc=WordApp.Documents.Add();
+                Doc.Activate();
+                Doc.Content.Paste();
+                Doc.Activate();
+                WordApp.DisplayAlerts=false;
+
+                try{ // maybe not saved
+                        Doc.Close();
+                }catch(e){};
+
+                WordApp.DisplayAlerts=true;
+                WordApp.Quit();
+                return;
+        }catch(e){ // maybe automation not permitted
+                alert("Cancled")
+        }
+}
+//-->
+</SCRIPT>
+<div id="exptMe" contentEditable="true"
+style="width:400;height:200;border:1px solid black">Here is the
+content to be Exported</div>
+<input name="button" type="button" onClick="exptWord(exptMe)"
+value="Export WORD">
+</body></HTML>

@@ -199,9 +199,11 @@ Define("Loader", Depend("~/Cox/Extends/jQuery", "~/Cox/Tools/Queue", "~/Cox/Env"
                 function()
                 {
                     clearTimeout(_this._timeout);
-                    _this._curObj.off("error", _this._onErrorHandler);
-                    _this._curObj.off("done", _this._onLoadHandler);
-                    _this._curObj.off("readystatechange", _this._onLoadHandler);
+                    if (_this._curObj)  {
+                        _this._curObj.off("error", _this._onErrorHandler);
+                        _this._curObj.off("done", _this._onLoadHandler);
+                        _this._curObj.off("readystatechange", _this._onLoadHandler);
+                    }
                     _this.fireEvent("done", [true, _this._curSrc]);
                 }
             ][OLD_IE ? 0 : 1];
@@ -329,7 +331,7 @@ Define("Loader", Depend("~/Cox/Extends/jQuery", "~/Cox/Tools/Queue", "~/Cox/Env"
         cssloader.srcs  = [];  
         jsloader._load  = jsload;
         cssloader._load = cssload;
-
+        
         function pass(ok, src)
         {
             ok && XList.remove(this.srcs, src);
@@ -339,7 +341,7 @@ Define("Loader", Depend("~/Cox/Extends/jQuery", "~/Cox/Tools/Queue", "~/Cox/Env"
             if (this.srcs.length) {
                 this._load.rejected(this.srcs);
             } else {
-                this._load.resolved();
+                !this._load.isResolved() && this._load.resolved();
             }
         }
 

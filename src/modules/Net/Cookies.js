@@ -14,6 +14,7 @@
 
 Define( "Cookies", function( require, Cookies ){
     var
+        DAY           = 86400000,
         RE_SEPARATE   = "; ",
         cache         = {},
         originCookies = ""
@@ -41,7 +42,7 @@ Define( "Cookies", function( require, Cookies ){
             expires = expires.toGMTString();
         }else if( +expires && is( Number, +expires ) ){
             var date = new Date;
-            date.setTime( +expires );
+            date.setTime( date.getTime() + (expires*DAY) );
             expires = date.toGMTString();
         }else{
             expires = 0;

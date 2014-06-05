@@ -21,8 +21,10 @@ Define( "Animation", Depend( "~/Cox/Env" ), function( require, Animation, module
         Env                = require( "Env" ),
         EMPTY_FUNCTION     = function(){},
         SLICE              = Array.prototype.slice,
-        TIMER_MIN_INTERVAL = 10,
-        DEFAULT_FPS        = Env.name === "ie" ? 65 : 45,
+        TIMER_MIN_INTERVAL = 16,
+        BROWSER_FPS        = { "ie" : 60, "firefox" : 54 }
+        //DEFAULT_FPS        = BROWSER_FPS[Env.name] || 40,
+        DEFAULT_FPS        = 62,
         UID = function(){
             var uid = new Date().getTime();
             return function( prefix ){
@@ -30,7 +32,6 @@ Define( "Animation", Depend( "~/Cox/Env" ), function( require, Animation, module
             };
         }()   
     ;
-   
     Animation = Class( "Animation", Extends( Cox.EventSource ), function( Static, Public ){
 
         Static.Transition = {
@@ -189,7 +190,6 @@ Define( "Animation", Depend( "~/Cox/Env" ), function( require, Animation, module
 
             if( frame > frames ){
                 clearInterval( anima._timer );
-
                 anima._timer         = null;
                 anima._play_clips    = null;
                 anima._played_clips  = {};
@@ -202,48 +202,33 @@ Define( "Animation", Depend( "~/Cox/Env" ), function( require, Animation, module
                 return;
             }
 
-            event = anima.getEvent( "enterFrame" );
-            event.frames       = frames;
-            event.currentFrame = frame;
-            anima.fireEvent( "enterFrame", [ event ] );
-            anima._play_clips = XList.filter( anima._play_clips, function( clip ){
-                var 
-                    clipName = clip.clipName,
-                    values   = null
-                ;
-                if( clip.startFrame <= frame && clip.endFrame >= frame ){
-                    if( !( clipName in anima._played_clips ) ){
-                        anima._played_clips[ clipName ] = clip;
-                        event = anima.getEvent( "enterClip" );
-                        event.frames       = frames;
-                        event.currentFrame = frame;
-                        event.clipName     = clipName;
-                        anima.fireEvent( "enterClip", [ event ] );
-                    }
+            var clips = anima._play_clips;
 
-                    //计算变化值
-                    values = {};
-                    for( var i = 0, l = clip.options.length; i < l; i++ ){
-                        var option = clip.options[i];
-                        values[ option.key ] = option.transition(
-                            frame - clip.startFrame, 
-                            option.from, 
-                            option.to - option.from, 
-                            clip.endFrame - clip.startFrame
+            for (var i = 0, n = 0, l = clips.length, c, t, v, s, e; i < l; i++) {
+                c = clips[i];
+                s = c.startFrame,
+                e = c.endFrame,
+                t = c.clipName;
+                v = null;
+                if (s <= frame && e >= frame){
+                    v = {};
+                    for (var i2 = 0, l2 = c.options.length, o; i2 < l2; i2++) {
+                        o = c.options[i2];
+                        v[o.key] = o.transition(
+                            frame - s, 
+                            o.from, 
+                            o.to - o.from, 
+                            e - s
                         );
                     }
-                    clip.handler.call( anima, values, clipName );
+                    c.handler.call(anima, v, t);
+                    
                 }
-                if( clip.endFrame <= frame ){
-                    event = anima.getEvent( "leaveClip" );
-                    event.frames       = frames;
-                    event.currentFrame = frame;
-                    event.clipName     = clipName;
-                    anima.fireEvent( "leaveClip", [ event ] );
-                    return false;
+                if(e > frame){
+                    n++;
                 }
-                return true;
-            } );
+            }
+            clips.length = n;
         }
 
         function computeFrames( clips, fps ){
@@ -272,8 +257,8 @@ Define( "Animation", Depend( "~/Cox/Env" ), function( require, Animation, module
                 );
 
                 this._clips              = {};
-                this._fps                = fps;
                 this._interval           = Math.max( 1000 / fps, TIMER_MIN_INTERVAL );
+                this._fps                = ~~(1000 / this._interval);
                 this._frames             = 0;
                 this._timer              = null;
                 this._play_clips         = null;
@@ -307,7 +292,6 @@ Define( "Animation", Depend( "~/Cox/Env" ), function( require, Animation, module
                         }
                         option.from = parseFloat( option.from || 0 );
                         option.to   = parseFloat( option.to || 0 );
-                        //option.
                         return option;
                     } )
                 };  

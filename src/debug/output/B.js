@@ -1,1 +1,0 @@
-Define("B",Depend(["./A","./C"]),function(e,n){n.name="B"});
